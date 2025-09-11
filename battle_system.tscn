@@ -1,0 +1,177 @@
+[gd_scene load_steps=4 format=3 uid="uid://d1fgjqgvdvtpi"]
+
+[ext_resource type="Script" uid="uid://mqlptb1wsaxc" path="res://battle_system.gd" id="1_n13d2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_c487d"]
+bg_color = Color(0.88533, 0.275222, 0.247616, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_n13d2"]
+bg_color = Color(0.180392, 0.862745, 0.372549, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="BattleSystem" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_n13d2")
+
+[node name="BattleUI" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Player" type="PanelContainer" parent="BattleUI"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 17.0
+offset_top = -136.0
+offset_right = 285.0
+offset_bottom = -16.0
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="BattleUI/Player"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="PlayerPannel" type="VBoxContainer" parent="BattleUI/Player/MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="PlayerName" type="Label" parent="BattleUI/Player/MarginContainer/PlayerPannel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Player"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HPBar" type="ProgressBar" parent="BattleUI/Player/MarginContainer/PlayerPannel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_c487d")
+theme_override_styles/fill = SubResource("StyleBoxFlat_n13d2")
+show_percentage = false
+
+[node name="HPLabel" type="Label" parent="BattleUI/Player/MarginContainer/PlayerPannel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "HP"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Enemy" type="PanelContainer" parent="BattleUI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -266.0
+offset_top = -134.0
+offset_right = -12.0
+offset_bottom = -13.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="BattleUI/Enemy"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="EnemyPannel" type="VBoxContainer" parent="BattleUI/Enemy/MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="EnemyName" type="Label" parent="BattleUI/Enemy/MarginContainer/EnemyPannel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Enemy"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EnemyHPBar" type="ProgressBar" parent="BattleUI/Enemy/MarginContainer/EnemyPannel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_c487d")
+theme_override_styles/fill = SubResource("StyleBoxFlat_n13d2")
+show_percentage = false
+
+[node name="EnemyHPLabel" type="Label" parent="BattleUI/Enemy/MarginContainer/EnemyPannel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "HP"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LogPannel" type="Panel" parent="BattleUI"]
+layout_mode = 1
+offset_left = 17.0
+offset_top = 18.0
+offset_right = 286.0
+offset_bottom = 135.0
+
+[node name="BattleLog" type="RichTextLabel" parent="BattleUI/LogPannel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Actions" type="PanelContainer" parent="BattleUI"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -99.0
+offset_top = -106.0
+offset_right = 100.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ActionPanel" type="VBoxContainer" parent="BattleUI/Actions"]
+layout_mode = 2
+alignment = 1
+
+[node name="ActionButtons" type="HBoxContainer" parent="BattleUI/Actions/ActionPanel"]
+layout_mode = 2
+alignment = 1
+
+[node name="Attack" type="Button" parent="BattleUI/Actions/ActionPanel/ActionButtons"]
+layout_mode = 2
+text = "Attack"
+
+[node name="Defend" type="Button" parent="BattleUI/Actions/ActionPanel/ActionButtons"]
+layout_mode = 2
+text = "Defend"
+
+[node name="Restart" type="Button" parent="BattleUI"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
