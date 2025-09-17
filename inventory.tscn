@@ -1,0 +1,155 @@
+[gd_scene load_steps=2 format=3 uid="uid://bl5ttpw1qbxuu"]
+
+[ext_resource type="Script" uid="uid://uu56ml2c7260" path="res://inventory_gui.gd" id="1_pohso"]
+
+[node name="InventoryGUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_pohso")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="InventoryTabs" type="TabContainer" parent="."]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -435.0
+offset_top = -249.0
+offset_right = -35.0
+offset_bottom = 265.0
+grow_horizontal = 0
+grow_vertical = 2
+current_tab = 0
+
+[node name="ItemsTab" type="Control" parent="InventoryTabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="ItemsGrid" type="GridContainer" parent="InventoryTabs/ItemsTab"]
+layout_mode = 0
+offset_right = 317.0
+offset_bottom = 483.0
+
+[node name="ItemsList" type="ItemList" parent="InventoryTabs/ItemsTab"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -82.0
+offset_top = -241.5
+offset_bottom = 239.5
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="EquipmentTab" type="Control" parent="InventoryTabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="WeaponSlot" type="Button" parent="InventoryTabs/EquipmentTab"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -61.0
+offset_top = -36.5
+offset_right = 56.0
+offset_bottom = 17.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ArmorSlot" type="Button" parent="InventoryTabs/EquipmentTab"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -61.0
+offset_top = 33.5
+offset_right = 56.0
+offset_bottom = 87.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="AccessorySlot" type="Button" parent="InventoryTabs/EquipmentTab"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.0
+offset_top = 113.5
+offset_right = 57.0
+offset_bottom = 167.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="StatsTab" type="Control" parent="."]
+layout_mode = 1
+anchor_left = 0.622
+anchor_top = 0.472
+anchor_right = 0.622
+anchor_bottom = 0.472
+offset_left = -247.544
+offset_top = -35.856
+offset_right = -3.54407
+offset_bottom = 39.144
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GoldDisplay" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.622
+anchor_top = 0.229
+anchor_right = 0.622
+anchor_bottom = 0.229
+offset_left = -163.544
+offset_top = -25.392
+offset_right = -1.54407
+offset_bottom = 28.608
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ItemTooltip" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.62
+anchor_top = 0.727
+anchor_right = 0.62
+anchor_bottom = 0.727
+offset_left = -235.24
+offset_top = 1.90396
+offset_right = 1.76001
+offset_bottom = 111.904
+
+[node name="CloseButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.966
+anchor_top = 0.168
+anchor_right = 0.966
+anchor_bottom = 0.168
+offset_left = -58.832
+offset_top = -38.864
+offset_right = 0.167969
+offset_bottom = -3.86401

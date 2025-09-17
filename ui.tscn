@@ -1,0 +1,57 @@
+[gd_scene load_steps=4 format=3 uid="uid://6gg3w8yr655p"]
+
+[ext_resource type="Script" uid="uid://yjo2vrhic0ix" path="res://ui.gd" id="1_fyqef"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xb563"]
+bg_color = Color(0.88533, 0.275222, 0.247616, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fyqef"]
+bg_color = Color(0.180392, 0.862745, 0.372549, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="UI" type="CanvasLayer"]
+script = ExtResource("1_fyqef")
+
+[node name="UIContainer" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HealthBar" type="ProgressBar" parent="UIContainer"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 0
+offset_left = 1011.0
+offset_top = 8.0
+offset_right = 1140.0
+offset_bottom = 35.0
+theme_override_styles/background = SubResource("StyleBoxFlat_xb563")
+theme_override_styles/fill = SubResource("StyleBoxFlat_fyqef")
+show_percentage = false
+
+[node name="StaminaBar" type="ProgressBar" parent="UIContainer"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -136.0
+offset_top = -250.0
+offset_right = -7.0
+offset_bottom = -223.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_xb563")
+theme_override_styles/fill = SubResource("StyleBoxFlat_fyqef")
+show_percentage = false

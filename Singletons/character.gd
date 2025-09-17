@@ -1,5 +1,3 @@
-# character.gd
-# Save this as character.gd in your project
 extends Node
 
 class_name Character

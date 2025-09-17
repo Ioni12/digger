@@ -1,6 +1,5 @@
 extends Control
-
-class_name BattleSystem  # Fixed typo
+class_name BattleSystem
 
 enum BattleState {
 	INIT,
@@ -15,10 +14,13 @@ enum BattleState {
 }
 
 var current_state: BattleState = BattleState.INIT
-var player: Character
+var player_character: Character  # Battle-specific character wrapper
 var enemy: Character
 var battle_log: Array[String] = []
 var enemy_exp_reward: int = 0
+
+# Reference to the actual player object
+var actual_player: Player
 
 @onready var battle_log_text: RichTextLabel = %BattleLog
 @onready var action_panel: VBoxContainer = $BattleUI/Actions/ActionPanel
@@ -48,22 +50,24 @@ func _ready():
 func initialize_battle():
 	print("Initializing battle..." + "\n")
 	
-	var player_stats = EncounterManager.get_player_stats()
+	# Get the actual player reference instead of stats dictionary
+	actual_player = EncounterManager.player_reference
 	
-	if player_stats == null:
-		print("ERROR: Player stats is null!")
+	if not actual_player:
+		print("ERROR: No player reference!")
 		return
 	
-	# Create new Character instances (not using singleton for individual battle characters)
-	player = Character.new(
+	# Create a battle-specific Character wrapper from the player stats
+	var player_stats = actual_player.get_stats_dictionary()
+	player_character = Character.new(
 		player_stats.get("name"),
-		player_stats.get("max_hp"),  # Use max_hp for initialization
+		player_stats.get("max_hp"),
 		player_stats.get("base_attack"),
 		player_stats.get("base_defense"),
 		player_stats.get("base_speed")
 	)
-	# Set current HP after creation
-	player.current_hp = player_stats.get("current_hp")
+	# Set current HP
+	player_character.current_hp = player_stats.get("current_hp")
 	
 	var enemy_data = EncounterManager.get_current_enemy()
 	
@@ -80,7 +84,7 @@ func initialize_battle():
 	battle_log.clear()
 	
 	print("Battle initialized successfully!")
-	print("Player: ", player.char_name, " HP:", player.current_hp, "/", player.max_hp)
+	print("Player: ", player_character.char_name, " HP:", player_character.current_hp, "/", player_character.max_hp)
 	print("Enemy: ", enemy.char_name, " HP:", enemy.current_hp, "/", enemy.max_hp, "\n")
 	
 func setup_ui():
@@ -91,7 +95,7 @@ func setup_ui():
 
 func start_battle():
 	add_log("Battle begins!")
-	add_log(player.char_name + " (Speed: " + str(player.base_speed) + ") vs " + enemy.char_name + " (Speed: " + str(enemy.base_speed) + ")")
+	add_log(player_character.char_name + " (Speed: " + str(player_character.base_speed) + ") vs " + enemy.char_name + " (Speed: " + str(enemy.base_speed) + ")")
 	
 	determine_next_turn()
 
@@ -136,9 +140,10 @@ func process_player_action(action: Dictionary):
 		"defend":
 			player_defend()
 	
-	# The Character class now handles speed reduction in act()
-	player.act()
+	player_character.act()
 	
+	# Sync damage back to actual player
+	sync_player_health()
 	update_ui()
 	
 	if not enemy.is_alive():
@@ -150,14 +155,13 @@ func process_player_action(action: Dictionary):
 	determine_next_turn()
 
 func player_attack():
-	# Use the improved damage calculation from Character class
-	var damage = calculate_damage(player.attack, enemy.get_current_defense())
+	var damage = calculate_damage(player_character.attack, enemy.get_current_defense())
 	enemy.take_damage(damage)
-	add_log(player.char_name + " attacks for " + str(damage) + " damage!")
+	add_log(player_character.char_name + " attacks for " + str(damage) + " damage!")
 
 func player_defend():
-	player.defend()
-	add_log(player.char_name + " takes a defensive stance! (Defense: " + str(player.get_current_defense()) + ")")
+	player_character.defend()
+	add_log(player_character.char_name + " takes a defensive stance! (Defense: " + str(player_character.get_current_defense()) + ")")
 
 func process_enemy_turn():
 	if current_state != BattleState.ENEMY_TURN:
@@ -172,12 +176,13 @@ func process_enemy_turn():
 		"attack":
 			enemy_attack()
 	
-	# The Character class now handles speed reduction and defense reset
 	enemy.act()
 	
+	# Sync damage back to actual player
+	sync_player_health()
 	update_ui()
 	
-	if not player.is_alive():
+	if not player_character.is_alive():
 		end_battle(false)
 		return
 	
@@ -186,27 +191,34 @@ func process_enemy_turn():
 	determine_next_turn()
 
 func enemy_attack():
-	var damage = calculate_damage(enemy.attack, player.get_current_defense())
-	player.take_damage(damage)
+	var damage = calculate_damage(enemy.attack, player_character.get_current_defense())
+	player_character.take_damage(damage)
 	add_log(enemy.char_name + " attacks for " + str(damage) + " damage!")
-	
+
+func sync_player_health():
+	"""Sync health changes back to the actual player object"""
+	if actual_player and actual_player.stats:
+		actual_player.stats.data.current_hp = player_character.current_hp
+		actual_player.health_changed.emit(actual_player.current_hp, actual_player.max_hp)
+
 func end_battle(player_won: bool):
+	# Final health sync
+	sync_player_health()
+	
 	if player_won:
 		current_state = BattleState.BATTLE_WON
 		add_log("Victory! " + enemy.char_name + " has been defeated!")
 		add_log("Gained " + str(enemy_exp_reward) + " EXP!\n")
 	
-		var updated_stats = EncounterManager.get_player_stats()
-		if updated_stats != null:
-			updated_stats["current_hp"] = player.current_hp
-			EncounterManager.update_player_stats(updated_stats)
+		# Give EXP directly to the actual player
+		
 		
 		await get_tree().create_timer(1.0).timeout
 		EncounterManager.battle_ended.emit(true, enemy_exp_reward)
 		close_battle_popup()
 	else:
 		current_state = BattleState.BATTLE_LOST
-		add_log("Defeat! " + player.char_name + " has fallen...\n")
+		add_log("Defeat! " + player_character.char_name + " has fallen...\n")
 		
 		await get_tree().create_timer(1.0).timeout
 		EncounterManager.battle_ended.emit(false, 0)
@@ -226,14 +238,13 @@ func close_battle_popup():
 	get_tree().paused = false
 
 func update_ui():
-	if player_name_label:
-		var player_stats = EncounterManager.get_player_stats()
-		player_name_label.text = player.char_name + " (Lv." + str(player_stats["level"]) + ")"
+	if player_name_label and actual_player:
+		player_name_label.text = actual_player.player_name + " (Lv." + str(actual_player.level) + ")"
 	
 	if player_hp_bar and player_hp_label:
-		var hp_ratio = float(player.current_hp) / float(player.max_hp)
+		var hp_ratio = float(player_character.current_hp) / float(player_character.max_hp)
 		player_hp_bar.value = hp_ratio * 100
-		player_hp_label.text = str(player.current_hp) + "/" + str(player.max_hp)
+		player_hp_label.text = str(player_character.current_hp) + "/" + str(player_character.max_hp)
 	
 	if enemy_name_label:
 		enemy_name_label.text = enemy.char_name
@@ -246,31 +257,31 @@ func update_ui():
 	update_action_buttons()
 	
 	print("Current state: ", BattleState.keys()[current_state], "\n")
-	if player and enemy:
-		print("Player speed: ", player.current_speed, " | Enemy speed: ", enemy.current_speed, "\n")
+	if player_character and enemy:
+		print("Player speed: ", player_character.current_speed, " | Enemy speed: ", enemy.current_speed, "\n")
 
 func get_next_actor() -> Character:
-	if player.current_speed >= enemy.current_speed:
-		return player
+	if player_character.current_speed >= enemy.current_speed:
+		return player_character
 	else:
 		return enemy
 
 func determine_next_turn():
-	if not player.is_alive() or not enemy.is_alive():
+	if not player_character.is_alive() or not enemy.is_alive():
 		return
 	
-	player.advance_time()
+	player_character.advance_time()
 	enemy.advance_time()
 	
 	var next_actor = get_next_actor()
 	
-	if next_actor == player:
+	if next_actor == player_character:
 		actions.visible = true
-		var effective_speed = player.get_speed_with_fatigue()
+		var effective_speed = player_character.get_speed_with_fatigue()
 		var fatigue_text = ""
-		if effective_speed < player.base_speed:
-			fatigue_text = " (Fatigued: " + str(effective_speed) + "/" + str(player.base_speed) + ")"
-		add_log(player.char_name + "'s turn! (Speed: " + str(player.current_speed) + ")" + fatigue_text)
+		if effective_speed < player_character.base_speed:
+			fatigue_text = " (Fatigued: " + str(effective_speed) + "/" + str(player_character.base_speed) + ")"
+		add_log(player_character.char_name + "'s turn! (Speed: " + str(player_character.current_speed) + ")" + fatigue_text)
 		current_state = BattleState.PLAYER_TURN
 		update_ui()
 	else:
