@@ -14,6 +14,7 @@ signal item_used(item: Item)
 
 # === ADD ITEMS ===
 func add_item(item: Item, quantity: int = 1) -> void:
+	print("DEBUG: Adding item with name: '%s', type: %s" % [item.name, Item.ItemType.keys()[item.item_type]])
 	if item.is_stackable:
 		# Try to stack with existing item
 		for existing_item in items:
@@ -37,11 +38,18 @@ func add_item(item: Item, quantity: int = 1) -> void:
 	else:
 		# Non-stackable items (equipment)
 		for i in quantity:
-			var new_item = item.duplicate()
+			var new_item = Item.new(item.name, item.item_type)  # Create fresh instead of duplicate
+			# Copy all properties manually
+			new_item.description = item.description
+			new_item.attack_bonus = item.attack_bonus
+			new_item.defense_bonus = item.defense_bonus
+			new_item.speed_bonus = item.speed_bonus
+			new_item.heal_amount = item.heal_amount
+			new_item.stamina_restore = item.stamina_restore
+			new_item.value = item.value
 			new_item.quantity = 1
 			items.append(new_item)
-		print("Added %s to inventory" % item.name)
-	
+	print(items)
 	inventory_changed.emit()
 
 # Convenience method for adding by creating item
@@ -72,7 +80,16 @@ func remove_item(item_name: String, quantity: int = 1) -> bool:
 
 # === EQUIPMENT MANAGEMENT ===
 func equip_item(item_name: String) -> bool:
+	print(item_name)
 	var item_to_equip = find_item(item_name)
+	
+	# DEBUG: Add these lines
+	if item_to_equip:
+		print("Found item: %s, type: %s" % [item_to_equip.name, Item.ItemType.keys()[item_to_equip.item_type]])
+		print("Can be equipped: %s" % item_to_equip.can_be_equipped())
+	else:
+		print("Item not found: %s" % item_name)
+		
 	if not item_to_equip or not item_to_equip.can_be_equipped():
 		print("Cannot equip %s" % item_name)
 		return false
@@ -147,6 +164,7 @@ func use_item(item_name: String) -> bool:
 # === UTILITY METHODS ===
 func find_item(item_name: String) -> Item:
 	for item in items:
+		print(item.name)
 		if item.name == item_name:
 			return item
 	return null

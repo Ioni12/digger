@@ -40,17 +40,18 @@ metadata/_tab_index = 0
 
 [node name="ItemsGrid" type="GridContainer" parent="InventoryTabs/ItemsTab"]
 layout_mode = 0
-offset_right = 317.0
+offset_right = 393.0
 offset_bottom = 483.0
 
 [node name="ItemsList" type="ItemList" parent="InventoryTabs/ItemsTab"]
+visible = false
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
-offset_left = -82.0
+offset_left = -128.0
 offset_top = -241.5
 offset_bottom = 239.5
 grow_horizontal = 0
@@ -103,18 +104,10 @@ offset_bottom = 167.5
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="StatsTab" type="Control" parent="."]
-layout_mode = 1
-anchor_left = 0.622
-anchor_top = 0.472
-anchor_right = 0.622
-anchor_bottom = 0.472
-offset_left = -247.544
-offset_top = -35.856
-offset_right = -3.54407
-offset_bottom = 39.144
-grow_horizontal = 2
-grow_vertical = 2
+[node name="StatsTab" type="Control" parent="InventoryTabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
 
 [node name="GoldDisplay" type="Label" parent="."]
 layout_mode = 1

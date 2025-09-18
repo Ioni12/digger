@@ -163,6 +163,13 @@ func finish_digging():
 		var current_terrain = environment.get_tile_at(grid_x, grid_y)
 		var revealed_terrain = environment.dig_tile(grid_x, grid_y)
 		print("Revealed terrain: ", GameEnviroment.TileType.keys()[revealed_terrain])
+		
+		if randf() < 0.5:
+			var player = get_parent()
+			var random_item = Item.new("Stone", Item.ItemType.MISC)
+			player.add_item(random_item)
+			print("Found a Stone!")
+			
 		check_for_encounter(current_terrain)
 	else:
 		print("Dig failed! No terrain revealed.")

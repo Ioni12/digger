@@ -9,8 +9,6 @@ var inventory_instance: InventoryGUI
 
 func _ready() -> void:
 	setup_game()
-	
-	# Preload the inventory scene
 	inventory_scene = preload("res://inventory.tscn")
 
 func _process(delta: float) -> void:
@@ -43,45 +41,34 @@ func _process(delta: float) -> void:
 		
 		camera.position = camera.position.lerp(target_pos, 0.1)
 
-# Handle input for inventory toggle
 func _input(event):
-	if event.is_action_pressed("ui_cancel") and inventory_instance and inventory_instance.visible:
-		# Close inventory with Escape key
-		close_inventory()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("toggle_inventory") or (event is InputEventKey and event.pressed and event.keycode == KEY_I):
-		# Toggle inventory with 'I' key or defined action
+	if event.is_action_pressed("toggle_inventory") or (event is InputEventKey and event.pressed and event.keycode == KEY_I):
 		toggle_inventory()
 		get_viewport().set_input_as_handled()
 
-func toggle_inventory():
-	if inventory_instance and inventory_instance.visible:
-		close_inventory()
-	else:
-		open_inventory()
-
 func open_inventory():
 	if not inventory_instance:
-		# Create inventory instance
 		inventory_instance = inventory_scene.instantiate()
-		
-		# Add to UI layer instead of main game
 		ui.add_child(inventory_instance)
-		
-		# Setup inventory with player data
 		inventory_instance.setup(player.inventory, player)
-		inventory_instance.inventory_closed.connect(close_inventory)
+		inventory_instance.inventory_closed.connect(close_inventory)  # This is fine - signal connection
 	
+	inventory_instance.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	inventory_instance.open_inventory()
-	
-	# Pause game while inventory is open (optional)
 	get_tree().paused = true
 
 func close_inventory():
+	# Don't call inventory_instance.close_inventory() here!
+	# This function should only be called BY the inventory via signal
 	if inventory_instance:
-		inventory_instance.close_inventory()
-		# Unpause game
 		get_tree().paused = false
+
+func toggle_inventory():
+	if inventory_instance and inventory_instance.visible:
+		# Let InventoryGUI close itself
+		inventory_instance.close_inventory()
+	else:
+		open_inventory()
 
 func setup_game():
 	# Create environment first

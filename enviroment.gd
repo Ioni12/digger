@@ -1,7 +1,7 @@
 extends Node2D
 class_name GameEnviroment
 
-const SIZE = 60
+const SIZE = 120
 const WIDTH = 30
 const HEIGHT = 30
 
