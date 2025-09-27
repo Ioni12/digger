@@ -133,3 +133,18 @@ func print_item_info():
 		print("Heal: +%d HP | Stamina: +%d" % [heal_amount, stamina_restore])
 	print("Value: %d gold each" % value)
 	print("Equipped: %s" % str(is_equipped))
+
+func clone() -> Item:
+	var new_item = Item.new(name, item_type)
+	new_item.description = description
+	new_item.attack_bonus = attack_bonus
+	new_item.defense_bonus = defense_bonus
+	new_item.speed_bonus = speed_bonus
+	new_item.heal_amount = heal_amount
+	new_item.stamina_restore = stamina_restore
+	new_item.value = value
+	new_item.max_stack = max_stack
+	new_item.is_stackable = is_stackable
+	new_item.equipment_slot = equipment_slot
+	# Don't copy quantity or is_equipped - those are instance-specific
+	return new_item

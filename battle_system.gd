@@ -10,7 +10,9 @@ enum BattleState {
 	ANIMATING,
 	DIGGING,
 	IDLE,
-	MOVING
+	MOVING,
+	QTE_CHOICE,
+	QTE_ACTIVE
 }
 
 var current_state: BattleState = BattleState.INIT
@@ -18,6 +20,18 @@ var player_character: Character  # Battle-specific character wrapper
 var enemy: Character
 var battle_log: Array[String] = []
 var enemy_exp_reward: int = 0
+var qte_choice_active = false
+var qte_choice_timer = 3.0  # 3 seconds to decide
+var qte_choice_time_remaining = 0.0
+
+# QTE System variables
+var qte_active = false
+var qte_sequence: Array[String] = []
+var qte_current_index = 0
+var qte_time_per_key = 1.0
+var qte_key_time_remaining = 0.0
+var qte_success_count = 0
+var available_qte_keys = ["Z", "X", "C", "V"]
 
 # Reference to the actual player object
 var actual_player: Player
@@ -34,6 +48,8 @@ var actual_player: Player
 @onready var defend_button: Button = $BattleUI/Actions/ActionPanel/ActionButtons/Defend
 @onready var restart_button: Button = %Restart
 @onready var actions: PanelContainer = $BattleUI/Actions
+@onready var qte_choice_label: RichTextLabel = $BattleUI/ChoiceLabel
+@onready var qte_choice_timer_bar: ProgressBar = $BattleUI/TimerBar
 
 var available_actions = [
 	{"name": "Attack", "type": "attack", "cost": 0},
@@ -46,6 +62,71 @@ func _ready():
 	initialize_battle()
 	setup_ui()
 	start_battle()
+
+func _process(delta):
+	if qte_choice_active:
+		handle_qte_choice_timer(delta)
+	elif qte_active:
+		handle_qte_sequence_timer(delta)
+
+func _input(event):
+	if event.is_pressed():
+		if qte_choice_active:
+			handle_qte_choice_input(event)
+		elif qte_active:
+			handle_qte_sequence_input(event)
+
+func handle_qte_choice_timer(delta):
+	qte_choice_time_remaining -= delta
+	qte_choice_timer_bar.value = (qte_choice_time_remaining / qte_choice_timer) * 100
+	
+	# Auto-skip if time runs out
+	if qte_choice_time_remaining <= 0:
+		end_qte_choice("skip")
+
+func handle_qte_choice_input(event):
+	if event.keycode == KEY_A:
+		end_qte_choice("attempt")
+	elif event.keycode == KEY_D:
+		end_qte_choice("skip")
+
+func handle_qte_sequence_timer(delta):
+	qte_key_time_remaining -= delta
+	qte_choice_timer_bar.value = (qte_key_time_remaining / qte_time_per_key) * 100
+	
+	# Failed if time runs out on current key
+	if qte_key_time_remaining <= 0:
+		complete_qte(false)
+
+func handle_qte_sequence_input(event):
+	if qte_current_index < qte_sequence.size():
+		var expected_key = qte_sequence[qte_current_index]
+		var pressed_key = ""
+		
+		match event.keycode:
+			KEY_Z:
+				pressed_key = "Z"
+			KEY_X:
+				pressed_key = "X"
+			KEY_C:
+				pressed_key = "C"
+			KEY_V:
+				pressed_key = "V"
+		
+		if pressed_key == expected_key:
+			qte_success_count += 1
+			qte_current_index += 1
+			qte_key_time_remaining = qte_time_per_key
+			
+			# Update display
+			update_qte_display()
+			
+			# Check if sequence is complete
+			if qte_current_index >= qte_sequence.size():
+				complete_qte(true)
+		else:
+			# Wrong key pressed - fail immediately
+			complete_qte(false)
 	
 func initialize_battle():
 	print("Initializing battle..." + "\n")
@@ -92,6 +173,10 @@ func setup_ui():
 	setup_defend_button()
 	setup_restart_button()
 	update_ui()
+	
+	# Hide QTE UI initially
+	qte_choice_label.visible = false
+	qte_choice_timer_bar.visible = false
 
 func start_battle():
 	add_log("Battle begins!")
@@ -140,6 +225,10 @@ func process_player_action(action: Dictionary):
 		"defend":
 			player_defend()
 	
+	if not qte_choice_active and not qte_active:
+		complete_player_turn()
+
+func complete_player_turn():
 	player_character.act()
 	
 	# Sync damage back to actual player
@@ -155,6 +244,88 @@ func process_player_action(action: Dictionary):
 	determine_next_turn()
 
 func player_attack():
+	# 20% chance for QTE
+	if randf() < 0.8:
+		start_attack_qte()
+	else:
+		execute_normal_attack()
+
+func start_attack_qte():
+	current_state = BattleState.QTE_CHOICE
+	qte_choice_active = true
+	qte_choice_time_remaining = qte_choice_timer
+	
+	qte_choice_label.text = "[center]QTE Opportunity!\nPress [color=green]A[/color] to attempt bonus damage\nPress [color=red]D[/color] to skip[/center]"
+	qte_choice_label.visible = true
+	qte_choice_timer_bar.visible = true
+	qte_choice_timer_bar.value = 100
+	
+	# Disable action buttons during QTE choice
+	actions.visible = false
+
+func end_qte_choice(choice: String):
+	qte_choice_active = false
+	qte_choice_label.visible = false
+	qte_choice_timer_bar.visible = false
+	current_state = BattleState.ANIMATING
+	
+	match choice:
+		"attempt":
+			start_actual_qte()
+		"skip":
+			execute_normal_attack()
+			complete_player_turn()
+
+func start_actual_qte():
+	current_state = BattleState.QTE_ACTIVE
+	qte_active = true
+	qte_current_index = 0
+	qte_success_count = 0
+	qte_key_time_remaining = qte_time_per_key
+	
+	# Generate random sequence of 3-5 keys
+	var sequence_length = randi_range(3, 5)
+	qte_sequence.clear()
+	for i in sequence_length:
+		qte_sequence.append(available_qte_keys[randi() % available_qte_keys.size()])
+	
+	update_qte_display()
+	qte_choice_label.visible = true
+	qte_choice_timer_bar.visible = true
+
+func update_qte_display():
+	var display_text = "[center]QTE Sequence!\n\n"
+	
+	for i in range(qte_sequence.size()):
+		if i < qte_current_index:
+			display_text += "[color=green]" + qte_sequence[i] + "[/color] "
+		elif i == qte_current_index:
+			display_text += "[color=yellow][b]" + qte_sequence[i] + "[/b][/color] "
+		else:
+			display_text += qte_sequence[i] + " "
+	
+	display_text += "\n\nProgress: " + str(qte_current_index) + "/" + str(qte_sequence.size()) + "[/center]"
+	qte_choice_label.text = display_text
+
+func complete_qte(success: bool):
+	qte_active = false
+	qte_choice_label.visible = false
+	qte_choice_timer_bar.visible = false
+	current_state = BattleState.ANIMATING
+	
+	if success:
+		var success_rate = float(qte_success_count) / float(qte_sequence.size())
+		var damage_multiplier = 1.0 + (success_rate * 0.8)  # Up to 1.8x damage
+		var bonus_damage = int(calculate_damage(player_character.attack, enemy.get_current_defense()) * damage_multiplier)
+		enemy.take_damage(bonus_damage)
+		add_log(player_character.char_name + " performs a perfect combo for " + str(bonus_damage) + " damage!")
+	else:
+		add_log("QTE failed! Normal attack.")
+		execute_normal_attack()
+	
+	complete_player_turn()
+
+func execute_normal_attack():
 	var damage = calculate_damage(player_character.attack, enemy.get_current_defense())
 	enemy.take_damage(damage)
 	add_log(player_character.char_name + " attacks for " + str(damage) + " damage!")

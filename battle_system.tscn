@@ -172,6 +172,32 @@ text = "Defend"
 
 [node name="Restart" type="Button" parent="BattleUI"]
 unique_name_in_owner = true
-layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -107.0
+offset_top = 50.0
+offset_right = -50.0
+offset_bottom = 90.0
+grow_horizontal = 0
+
+[node name="ChoiceLabel" type="RichTextLabel" parent="BattleUI"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_right = 318.0
+offset_bottom = 135.0
+grow_vertical = 2
+
+[node name="TimerBar" type="ProgressBar" parent="BattleUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.714
+anchor_bottom = 0.714
+offset_left = 26.0
+offset_top = -0.120056
+offset_right = 145.0
+offset_bottom = 48.8799
+grow_vertical = 2

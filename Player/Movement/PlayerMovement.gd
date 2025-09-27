@@ -13,7 +13,7 @@ var player_stats: PlayerStats
 var stamina_system: StaminaSystem
 
 # Movement and world interaction
-var grid_x: int = 0
+var grid_x: int = GameEnviroment.WIDTH/2;
 var grid_y: int = 0
 var start_position: Vector2
 var target_position: Vector2
@@ -35,7 +35,8 @@ func _ready():
 	
 	if environment:
 		target_position = Vector2(grid_x * environment.SIZE, grid_y * environment.SIZE)
-
+	target_position = Vector2(grid_x * environment.SIZE, grid_y * environment.SIZE)
+	
 func _process(delta: float):
 	if EncounterManager and EncounterManager.is_in_battle:
 		return
@@ -47,6 +48,9 @@ func _process(delta: float):
 			update_digging(delta)
 		PlayerState.MOVING:
 			update_movement(delta)
+	
+	if environment:
+		environment.update_player_position(grid_x, grid_y)
 
 func handle_input():
 	if is_moving or not environment:
@@ -54,7 +58,14 @@ func handle_input():
 	
 	if EncounterManager and EncounterManager.is_in_battle:
 		return
-		
+	
+	# CHECK FOR NPC INTERACTION FIRST (before movement)
+	if Input.is_action_just_pressed("ui_accept") or Input.is_action_just_pressed("interact"):
+		var player = get_parent() as Player
+		if player and player.try_interact_with_npc():
+			return  # Interaction occurred, don't process movement
+	
+	# EXISTING MOVEMENT CODE (unchanged)
 	var new_x = grid_x
 	var new_y = grid_y
 	
@@ -86,7 +97,7 @@ func move_to_position(new_x: int, new_y: int):
 	is_moving = true
 	move_timer = 0.0
 	
-	if new_x == 0 and new_y == 0:
+	if new_x == GameEnviroment.WIDTH/2 and new_y == 0:
 		heal_at_sanctuary()
 
 func start_digging(new_x: int, new_y: int):
@@ -154,9 +165,6 @@ func update_digging(delta: float):
 		finish_digging()
 
 func finish_digging():
-	"""Complete the digging action"""
-	
-	
 	if not current_dig_failed:
 		print("Digging complete!")
 	# Only do the actual terrain digging if the dig didn't fail
@@ -166,9 +174,17 @@ func finish_digging():
 		
 		if randf() < 0.5:
 			var player = get_parent()
-			var random_item = Item.new("Stone", Item.ItemType.MISC)
+			print("Player exists: ", player != null)
+			print("Inventory exists: ", player.inventory != null) 
+			print("Inventory items before: ", player.inventory.items.size() if player.inventory else "N/A")
+
+			var random_item = Item.create_misc("Stone", "A common stone", 1)
+			random_item.is_stackable = true
 			player.add_item(random_item)
-			print("Found a Stone!")
+
+			print("Inventory items after: ", player.inventory.items.size() if player.inventory else "N/A")
+						
+			show_resource_popup("+1 Stone", Color.GRAY)
 			
 		check_for_encounter(current_terrain)
 	else:
@@ -184,6 +200,17 @@ func finish_digging():
 	current_state = PlayerState.MOVING
 	is_moving = true
 	move_timer = 0.0
+
+func show_resource_popup(text: String, color: Color):
+	var popup_scene = preload("res://ResourcePopup.tscn")
+	var popup = popup_scene.instantiate()
+	
+	# Add to the scene tree (use main scene or UI layer)
+	get_tree().current_scene.add_child(popup)
+	
+	# Position it above the player
+	var player_pos = get_parent().global_position
+	popup.show_text(text, color, player_pos + Vector2(0, -50))
 
 func update_movement(delta: float):
 	"""Update movement interpolation"""

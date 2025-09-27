@@ -1,21 +1,19 @@
-# Player.gd - Updated to integrate with new inventory system
 extends Node2D
 class_name Player
 
-# Component references
 @onready var stats: PlayerStats = $PlayerStats
 @onready var stamina_system: StaminaSystem = $StaminaSystem
 @onready var movement: PlayerMovement = $PlayerMovement
 @onready var visual: PlayerVisual = $PlayerVisual
 @onready var inventory: PlayerInventory = $PlayerInventory
+@onready var interaction: PlayerInteraction = $PlayerInteraction
 
-# Maintain original signals for backward compatibility
 signal health_changed(current_hp: int, max_hp: int)
 signal stamina_changed(current_stamina: int, max_stamina: int)
 signal stats_changed()
 signal level_up(new_level: int)
+signal npc_interaction(npc_name: String, message: String, interaction_data: Dictionary)
 
-# Environment reference - forwards to components
 var environment: GameEnviroment:
 	set(value):
 		_environment = value
@@ -23,11 +21,12 @@ var environment: GameEnviroment:
 			movement.environment = value
 		if visual:
 			visual.environment = value
+		if interaction:
+			interaction.setup_dependencies(movement, value)
 	get:
 		return _environment
 var _environment: GameEnviroment
 
-# Backward compatibility properties
 var player_name: String:
 	get: return stats.data.player_name if stats else "Hero"
 var level: int:
@@ -51,55 +50,56 @@ var max_stamina: int:
 var stamina: int:
 	get: return stats.data.current_stamina if stats else 100
 
-# Combat stats (now include equipment bonuses from inventory)
+
 var current_attack: int:
 	get: 
-		var base_attack = stats.data.base_attack if stats else 25
-		var equipment_bonus = inventory.get_total_attack_bonus() if inventory else 0
+		var base_attack = stats.data.base_attack 
+		var equipment_bonus = inventory.get_total_attack_bonus() 
 		return base_attack + equipment_bonus
 
 var current_defense: int:
 	get: 
-		var base_defense = stats.data.base_defense if stats else 15
-		var equipment_bonus = inventory.get_total_defense_bonus() if inventory else 0
+		var base_defense = stats.data.base_defense 
+		var equipment_bonus = inventory.get_total_defense_bonus() 
 		return base_defense + equipment_bonus
 
 var current_speed: int:
 	get: 
-		var base_speed = stats.data.current_speed if stats else 12
-		var equipment_bonus = inventory.get_total_speed_bonus() if inventory else 0
+		var base_speed = stats.data.current_speed 
+		var equipment_bonus = inventory.get_total_speed_bonus() 
 		return base_speed + equipment_bonus
 
 var is_defending: bool:
 	get: return stats.data.is_defending if stats else false
 
-# Movement properties
+
 var grid_x: int:
-	get: return movement.grid_x if movement else 0
+	get: return movement.grid_x 
 var grid_y: int:
-	get: return movement.grid_y if movement else 0
+	get: return movement.grid_y 
 var current_state:
-	get: return movement.current_state if movement else 0
+	get: return movement.current_state 
 var is_moving: bool:
 	get: return movement.is_moving if movement else false
 
 # Gold property for convenience
 var gold: int:
-	get: return inventory.gold if inventory else 0
+	get: return inventory.gold 
 
 func _ready() -> void:
-	# Ensure components exist
 	_setup_component("PlayerStats", PlayerStats)
 	_setup_component("StaminaSystem", StaminaSystem) 
 	_setup_component("PlayerMovement", PlayerMovement)
 	_setup_component("PlayerVisual", PlayerVisual)
 	_setup_component("PlayerInventory", PlayerInventory)
+	_setup_component("PlayerInteraction", PlayerInteraction)
 	
-	# Give starter gear and setup inventory
 	setup_inventory()
 	
-	# Connect component signals
 	_connect_signals()
+	
+	# Setup component dependencies
+	_setup_component_dependencies()
 	
 	# Setup movement references
 	if movement and environment:
@@ -134,11 +134,17 @@ func _setup_component(node_name: String, component_class):
 				visual = component_node
 			"PlayerInventory":
 				inventory = component_node
+			"PlayerInteraction":
+				interaction = component_node
+
+func _setup_component_dependencies():
+	"""Setup dependencies between components"""
+	if interaction and movement and environment:
+		interaction.setup_dependencies(movement, environment)
 
 func setup_inventory():
 	if inventory:
 		inventory.add_starter_items()
-		print("Player inventory initialized with starter items")
 
 func _connect_signals():
 	if stats:
@@ -153,10 +159,11 @@ func _connect_signals():
 		inventory.inventory_changed.connect(_on_inventory_changed)
 		inventory.item_equipped.connect(_on_item_equipped)
 		inventory.item_unequipped.connect(_on_item_unequipped)
+	
+	if interaction:
+		interaction.dialogue_started.connect(_on_dialogue_started)
+		interaction.dialogue_ended.connect(_on_dialogue_ended)
 
-func _process(delta: float) -> void:
-	# Components handle their own processing
-	pass
 
 # === SIGNAL FORWARDING ===
 func _on_health_changed(current: int, max_val: int):
@@ -183,11 +190,19 @@ func _on_item_unequipped(item: Item):
 	print("Unequipped %s" % item.name)
 	stats_changed.emit()
 
+# === NEW INTERACTION SIGNAL HANDLERS ===
+func _on_dialogue_started(npc: WorldNPC, message: String, npc_data: Dictionary):
+	npc_interaction.emit(npc, message, npc_data)
+
+
+func _on_dialogue_ended():
+	"""Handle when dialogue ends"""
+	print("Player: Dialogue session ended")
+
 # === BACKWARD COMPATIBILITY METHODS ===
 func get_stats_dictionary() -> Dictionary:
 	var stats_dict = stats.get_stats_dictionary() if stats else {}
 	
-	# Add inventory data
 	if inventory:
 		stats_dict["gold"] = inventory.gold
 		stats_dict["items"] = []
@@ -248,7 +263,7 @@ func add_gold(amount: int):
 func spend_gold(amount: int) -> bool:
 	return inventory.spend_gold(amount) if inventory else false
 
-# === ORIGINAL METHODS (Updated to work with inventory) ===
+# === ORIGINAL METHODS ===
 func reset_combat_stats():
 	if stats:
 		stats.reset_combat_stats()
@@ -289,7 +304,6 @@ func get_speed_with_fatigue() -> int:
 	return stats.data.get_speed_with_fatigue() if stats else 12
 
 func get_current_defense() -> int:
-	# This now includes equipment bonuses automatically via current_defense property
 	return current_defense
 
 # Stamina methods
@@ -309,9 +323,31 @@ func check_for_encounter(current_tile):
 	if movement:
 		movement.check_for_encounter(current_tile)
 
+# === INTERACTION METHODS (Updated to use PlayerInteraction component) ===
+func try_interact_with_npc() -> bool:
+	"""Try to interact with an adjacent NPC. Returns true if interaction occurred."""
+	return interaction.try_start_dialogue() if interaction else false
+
+func has_adjacent_npc() -> bool:
+	"""Check if there's an NPC adjacent to the player"""
+	return interaction.can_start_dialogue() if interaction else false
+
+func get_interaction_prompt() -> String:
+	"""Get text to display when near an NPC"""
+	return interaction.get_dialogue_prompt() if interaction else ""
+
+func end_dialogue():
+	"""End current dialogue"""
+	if interaction:
+		interaction.end_dialogue()
+
+func check_npc_interaction_input():
+	"""Alternative: Call this from your input handling code"""
+	if Input.is_action_just_pressed("ui_accept") or Input.is_action_just_pressed("interact"):
+		try_interact_with_npc()
+
 # Battle event handlers
 func _on_battle_started():
-	print("Player: Battle started, completing current movement")
 	if movement:
 		movement.on_battle_started()
 	
@@ -335,9 +371,6 @@ func print_stats():
 		stats.print_stats()
 	if stamina_system and stats:
 		print("Stamina: %d/%d | Exhaustion Level: %d" % [stats.data.stamina, stats.data.max_stamina, stats.data.exhaustion_level])
-	
-	print("Combat Stats (with equipment):")
-	print("Attack: %d | Defense: %d | Speed: %d" % [current_attack, current_defense, current_speed])
 
 func print_inventory():
 	if inventory:
@@ -347,10 +380,7 @@ func print_equipped_gear():
 	if inventory:
 		inventory.print_equipped_gear()
 
-# === REMOVED OLD EQUIPMENT METHODS ===
-# The following methods are no longer needed since we use inventory:
-# - give_starter_gear() -> replaced with setup_inventory()
-# - equip_weapon() -> replaced with equip_item()
-# - equip_armor() -> replaced with equip_item()
-# - get_attack_bonus() -> replaced with inventory.get_total_attack_bonus()
-# - get_defense_bonus() -> replaced with inventory.get_total_defense_bonus()
+func debug_interaction_state():
+	"""Debug method for interaction system"""
+	if interaction:
+		interaction.debug_print_state()

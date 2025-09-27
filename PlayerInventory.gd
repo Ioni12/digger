@@ -1,4 +1,3 @@
-# PlayerInventory.gd - Updated to use the new Item class
 extends Node
 class_name PlayerInventory
 
@@ -14,7 +13,6 @@ signal item_used(item: Item)
 
 # === ADD ITEMS ===
 func add_item(item: Item, quantity: int = 1) -> void:
-	print("DEBUG: Adding item with name: '%s', type: %s" % [item.name, Item.ItemType.keys()[item.item_type]])
 	if item.is_stackable:
 		# Try to stack with existing item
 		for existing_item in items:
@@ -31,33 +29,23 @@ func add_item(item: Item, quantity: int = 1) -> void:
 		
 		# Create new stack if needed
 		if quantity > 0:
-			var new_item = item.duplicate()
+			var new_item = item.clone()
 			new_item.quantity = min(quantity, item.max_stack)
 			items.append(new_item)
 			print("Added %d %s to inventory" % [new_item.quantity, item.name])
 	else:
 		# Non-stackable items (equipment)
 		for i in quantity:
-			var new_item = Item.new(item.name, item.item_type)  # Create fresh instead of duplicate
-			# Copy all properties manually
-			new_item.description = item.description
-			new_item.attack_bonus = item.attack_bonus
-			new_item.defense_bonus = item.defense_bonus
-			new_item.speed_bonus = item.speed_bonus
-			new_item.heal_amount = item.heal_amount
-			new_item.stamina_restore = item.stamina_restore
-			new_item.value = item.value
+			var new_item = item.clone()
 			new_item.quantity = 1
 			items.append(new_item)
 	print(items)
 	inventory_changed.emit()
 
-# Convenience method for adding by creating item
 func add_item_by_name(item_name: String, item_type: Item.ItemType, quantity: int = 1) -> void:
 	var new_item = Item.new(item_name, item_type)
 	add_item(new_item, quantity)
 
-# === REMOVE ITEMS ===
 func remove_item(item_name: String, quantity: int = 1) -> bool:
 	for i in range(items.size() - 1, -1, -1):  # Reverse loop for safe removal
 		var item = items[i]
@@ -78,7 +66,6 @@ func remove_item(item_name: String, quantity: int = 1) -> bool:
 	print("Don't have %s in inventory" % item_name)
 	return false
 
-# === EQUIPMENT MANAGEMENT ===
 func equip_item(item_name: String) -> bool:
 	print(item_name)
 	var item_to_equip = find_item(item_name)

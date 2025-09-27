@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://dejku7a7ai44s"]
+[gd_scene load_steps=10 format=3 uid="uid://dejku7a7ai44s"]
 
 [ext_resource type="Script" uid="uid://4hkgjhyuer0i" path="res://main.gd" id="1_0xm2m"]
 [ext_resource type="Script" uid="uid://wxwoyw1td3sg" path="res://enviroment.gd" id="1_ig7tw"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://ojm3slyhjvg2" path="res://Player/Stamina/StaminaSystem.gd" id="5_5vw27"]
 [ext_resource type="Script" uid="uid://cmwb2x6tphwmp" path="res://Player/Movement/PlayerMovement.gd" id="6_kek77"]
 [ext_resource type="Script" uid="uid://d1m18dm5lb8vx" path="res://Player/Visual/PlayerVisual.gd" id="7_4c57u"]
+[ext_resource type="Script" uid="uid://beantk422snga" path="res://WorldEnemy.gd" id="9_4c57u"]
 [ext_resource type="Script" uid="uid://d1n6fjt5bhqxr" path="res://PlayerInventory.gd" id="9_kek77"]
 
 [node name="Main" type="Node2D"]
@@ -32,3 +33,6 @@ script = ExtResource("7_4c57u")
 
 [node name="PlayerInventory" type="Node" parent="Player"]
 script = ExtResource("9_kek77")
+
+[node name="Enemie" type="Node2D" parent="."]
+script = ExtResource("9_4c57u")
