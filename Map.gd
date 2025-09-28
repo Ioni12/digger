@@ -161,7 +161,7 @@ func draw_entities(control: Control, map_start: Vector2):
 	control.draw_rect(player_rect, Color.BLACK, false, 1.0)
 	
 	# Draw enemies
-	for enemy in environment.enemies:
+	for enemy in environment.entity_manager.enemies:
 		var enemy_grid = enemy.get_grid_position()
 		var enemy_screen_pos = map_start + Vector2(enemy_grid.x * tile_size, enemy_grid.y * tile_size)
 		var enemy_rect = Rect2(enemy_screen_pos, Vector2(tile_size, tile_size))
@@ -171,7 +171,7 @@ func draw_entities(control: Control, map_start: Vector2):
 			control.draw_rect(enemy_rect, enemy_color)
 	
 	# Draw NPCs
-	for npc in environment.npcs:
+	for npc in environment.entity_manager.npcs:
 		var npc_grid = npc.get_grid_position()
 		var npc_screen_pos = map_start + Vector2(npc_grid.x * tile_size, npc_grid.y * tile_size)
 		var npc_rect = Rect2(npc_screen_pos, Vector2(tile_size, tile_size))

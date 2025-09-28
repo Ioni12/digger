@@ -32,9 +32,9 @@ func check_for_encounter():
 	
 	if enemy_grid == player_grid:
 		# Find this enemy's index and trigger encounter
-		var enemy_index = environment.enemies.find(self)
+		var enemy_index = environment.entity_manager.enemies.find(self)
 		if enemy_index != -1:
-			environment.trigger_enemy_encounter(self, enemy_index)
+			environment.entity_manager.trigger_enemy_encounter(self, enemy_index)
 
 func try_move():
 	var player_grid_pos = environment.get_player_grid_position()
@@ -54,9 +54,9 @@ func try_move():
 			var new_grid_pos = get_grid_position()
 			if new_grid_pos == player_grid_pos:
 				# Find this enemy's index in the environment's enemies array
-				var enemy_index = environment.enemies.find(self)
+				var enemy_index = environment.entity_manager.enemies.find(self)
 				if enemy_index != -1:
-					environment.trigger_enemy_encounter(self, enemy_index)
+					environment.entity_manager.trigger_enemy_encounter(self, enemy_index)
 			break
 
 # Get enemy's grid position (already implemented)

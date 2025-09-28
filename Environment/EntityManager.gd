@@ -1,12 +1,12 @@
 extends Node2D
 class_name EntityManager
 
-# Entity storage
+
 var enemies: Array[WorldEnemy] = []
 var npcs: Array[WorldNPC] = []
 
 # References
-var game_environment: GameEnviroment  # Fixed: changed from GameEnvironment to GameEnviroment
+var game_environment: GameEnviroment  
 var player_reference: Player
 
 # Spawn configuration
@@ -41,23 +41,40 @@ func spawn_all_entities():
 	spawn_npcs()
 
 func spawn_enemies():
-	"""Spawn enemies in structure areas only"""
 	var enemy_count = randi_range(enemy_spawn_count_min, enemy_spawn_count_max)
-	var available_tiles = get_enemy_spawn_locations()
+	var structure_tiles = game_environment.get_structure_digged_tiles()
 	
-	for i in min(enemy_count, available_tiles.size()):
-		var tile = available_tiles[i]
-		spawn_enemy_at(tile.x, tile.y)
+	for i in enemy_count:
+		if structure_tiles.size() > 0:
+			var tile = structure_tiles[randi() % structure_tiles.size()]
+			if tile.x == game_environment.WIDTH/2 and tile.y == 0:
+				continue
+			spawn_enemy_at(tile.x, tile.y)
+			structure_tiles.erase(tile)
 
 func spawn_npcs():
-	"""Spawn NPCs in remaining structure areas"""
 	var npc_count = randi_range(npc_spawn_count_min, npc_spawn_count_max)
-	var available_tiles = get_npc_spawn_locations()
+	var structure_tiles = get_structure_digged_tiles()
+	
+	var available_tiles = []
+	for tile in structure_tiles:
+		var has_enemy = false
+		for enemy in enemies:
+			if enemy.get_grid_position() == tile:
+				has_enemy = true
+				break
+		
+		if not has_enemy:
+			available_tiles.append(tile)
+	
+	var npc_types = [WorldNPC.NPCType.TRADER, WorldNPC.NPCType.GUIDE, WorldNPC.NPCType.SCHOLAR, WorldNPC.NPCType.HERMIT]
 	
 	for i in min(npc_count, available_tiles.size()):
-		var tile = available_tiles[i]
-		var npc_type = available_npc_types[i % available_npc_types.size()]
-		spawn_npc_at(tile.x, tile.y, npc_type)
+		if available_tiles.size() > 0:
+			var tile = available_tiles[randi() % available_tiles.size()]
+			var npc_type = npc_types[i % npc_types.size()]  # Cycle through types
+			spawn_npc_at(tile.x, tile.y, npc_type)
+			available_tiles.erase(tile)
 
 func spawn_enemy_at(x: int, y: int):
 	"""Create and add enemy at specific coordinates"""

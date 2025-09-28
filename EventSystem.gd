@@ -34,17 +34,17 @@ func spawn_npc_near_player_in_tunnel(npc_type: WorldNPC.NPCType, min_distance: i
 	
 	if valid_positions.size() > 0:
 		var spawn_pos = valid_positions[randi() % valid_positions.size()]
-		return environment.spawn_npc(spawn_pos.x, spawn_pos.y, npc_type)
+		return environment.entity_manager.spawn_npc_at(spawn_pos.x, spawn_pos.y, npc_type)
 	
 	return null
 
 func is_position_free_for_npc(x: int, y: int) -> bool:
-	for npc in environment.npcs:
+	for npc in environment.entity_manager.npcs:
 		var npc_pos = npc.get_grid_position()
 		if npc_pos.x == x and npc_pos.y == y:
 			return false
 	
-	for enemy in environment.enemies:
+	for enemy in environment.entity_manager.enemies:
 		var enemy_pos = enemy.get_grid_position()
 		if enemy_pos.x == x and enemy_pos.y == y:
 			return false

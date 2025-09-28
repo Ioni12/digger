@@ -81,7 +81,7 @@ func get_adjacent_npc() -> WorldNPC:
 	"""Find NPC adjacent to player."""
 	if not environment:
 		return null
-	return environment.get_adjacent_npc()
+	return environment.entity_manager.get_adjacent_npc()
 
 func start_dialogue_with_npc(npc: WorldNPC):
 	"""Begin dialogue with specified NPC."""
