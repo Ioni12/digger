@@ -1,0 +1,43 @@
+[gd_scene load_steps=2 format=3 uid="uid://dciwktk8uqkdq"]
+
+[ext_resource type="Script" uid="uid://bqyh6swwoof80" path="res://Map.gd" id="1_gfjgm"]
+
+[node name="Map" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gfjgm")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MapDisplay" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 164.0
+offset_top = 116.0
+offset_right = -249.0
+offset_bottom = -127.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CloseLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 23.0
+grow_horizontal = 2
+text = "press  \"m\" to close"

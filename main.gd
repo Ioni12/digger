@@ -10,6 +10,8 @@ var dialogue_ui_instance: DialogueUI
 var inventory_instance: InventoryGUI
 var pause_menu_scene: PackedScene
 var pause_menu_instance: Control
+var map_scene: PackedScene
+var map_instance: Control
 var event_system: EventSystem
 var is_paused: bool = false
 
@@ -22,6 +24,7 @@ func _ready() -> void:
 		print("DialogueUI.tscn loaded successfully")
 	else:
 		print("DialogueUI.tscn not found - dialogue system disabled")
+	setup_map()
 
 func _process(delta: float) -> void:
 	if EncounterManager and EncounterManager.is_in_battle:
@@ -72,6 +75,17 @@ func _input(event):
 		if (event.is_action_pressed("toggle_inventory") or (event is InputEventKey and event.pressed and event.keycode == KEY_I)):
 			toggle_inventory()
 			get_viewport().set_input_as_handled()
+	
+	if event is InputEventKey and event.pressed and event.keycode == KEY_M:
+		if not is_paused and not (dialogue_ui_instance and dialogue_ui_instance.is_dialogue_active):
+			toggle_map()
+			get_viewport().set_input_as_handled()
+
+func setup_map():
+	map_scene = preload("res://Map.tscn")  # Adjust path if needed
+	map_instance = map_scene.instantiate()
+	ui.add_child(map_instance)  # Add to UI layer
+	map_instance.setup(environment, player)
 
 func toggle_pause_menu():
 	# Don't open pause menu if dialogue is active
@@ -108,7 +122,6 @@ func close_pause_menu():
 func quit_game():
 	get_tree().quit()
 
-# Inventory Functions
 func open_inventory():
 	if not inventory_instance:
 		inventory_instance = inventory_scene.instantiate()
@@ -297,3 +310,9 @@ func initialize_event_system():
 	
 	# Trigger the initial NPC spawn event
 	event_system.trigger_initial_npc_spawn()
+
+func toggle_map():
+	if map_instance.visible:
+		map_instance.close_map()
+	else:
+		map_instance.open_map()

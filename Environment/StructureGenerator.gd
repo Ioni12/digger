@@ -30,14 +30,29 @@ var structures = {
 		[1,0,0,0,1],
 		[1,0,0,0,1],
 		[1,1,1,1,1]
-	]
+	],
+	
+	"test_structure": {
+		"pattern": [
+			[1,1,1],
+			[1,0,1],
+			[1,1,1]
+		],
+		"background": "res://icon.svg"
+	}
 }
 
 # Get a structure pattern
-func get_structure(name: String) -> Array:
+func get_structure(name: String):
 	if structures.has(name):
-		return structures[name]
-	return []
+		var structure = structures[name]
+		# If it's a dictionary with pattern and background, return the whole thing
+		if structure is Dictionary and structure.has("pattern"):
+			return structure
+		# Otherwise it's just an array pattern
+		else:
+			return {"pattern": structure, "background": null}
+	return {"pattern": [], "background": null}
 
 # Get list of available structures
 func get_structure_names() -> Array:

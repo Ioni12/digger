@@ -191,6 +191,38 @@ func get_total_speed_bonus() -> int:
 		total += item.speed_bonus
 	return total
 
+# === NEW: TOOL-SPECIFIC METHODS ===
+func get_equipped_digging_tool() -> Item:
+	"""Get the currently equipped digging tool, if any"""
+	return get_equipped_in_slot(Item.EquipmentSlot.TOOL)
+
+func has_digging_tool() -> bool:
+	"""Check if player has any digging tool equipped"""
+	return get_equipped_digging_tool() != null
+
+func get_digging_info() -> Dictionary:
+	"""Get current digging capabilities"""
+	var tool = get_equipped_digging_tool()
+	
+	if tool:
+		return {
+			"tool_name": tool.name,
+			"speed_multiplier": tool.dig_speed_multiplier,
+			"pattern": tool.dig_pattern,
+			"range": tool.dig_range,
+			"stamina_efficiency": tool.stamina_efficiency,
+			"has_tool": true
+		}
+	else:
+		return {
+			"tool_name": "Hands",
+			"speed_multiplier": 1.0,
+			"pattern": "single",
+			"range": 1,
+			"stamina_efficiency": 1.0,
+			"has_tool": false
+		}
+
 # === GOLD MANAGEMENT ===
 func add_gold(amount: int) -> void:
 	gold += amount
@@ -222,6 +254,8 @@ func print_inventory() -> void:
 		print("- %s x%d%s" % [item.name, item.quantity, equipped_text])
 		if item.has_combat_stats():
 			print("  └ Attack: +%d | Defense: +%d | Speed: +%d" % [item.attack_bonus, item.defense_bonus, item.speed_bonus])
+		if item.has_digging_properties():
+			print("  └ Dig Speed: x%.1f | Pattern: %s | Stamina: x%.1f" % [item.dig_speed_multiplier, item.dig_pattern, item.stamina_efficiency])
 
 func print_equipped_gear() -> void:
 	print("=== EQUIPPED GEAR ===")
@@ -234,8 +268,20 @@ func print_equipped_gear() -> void:
 		print("- %s (%s)" % [item.name, Item.EquipmentSlot.keys()[item.equipment_slot]])
 		if item.has_combat_stats():
 			print("  └ Attack: +%d | Defense: +%d | Speed: +%d" % [item.attack_bonus, item.defense_bonus, item.speed_bonus])
+		if item.has_digging_properties():
+			print("  └ Dig Speed: x%.1f | Pattern: %s | Stamina: x%.1f" % [item.dig_speed_multiplier, item.dig_pattern, item.stamina_efficiency])
 
-# === EXAMPLE USAGE ===
+func print_digging_status() -> void:
+	"""Print current digging capabilities"""
+	print("=== DIGGING STATUS ===")
+	var dig_info = get_digging_info()
+	print("Tool: %s" % dig_info["tool_name"])
+	print("Speed Multiplier: x%.1f" % dig_info["speed_multiplier"])
+	print("Pattern: %s" % dig_info["pattern"])
+	print("Range: %d" % dig_info["range"])
+	print("Stamina Efficiency: x%.1f" % dig_info["stamina_efficiency"])
+
+# === ENHANCED STARTER ITEMS ===
 func add_starter_items() -> void:
 	# Add some starter gear
 	var iron_sword = Item.create_weapon("Iron Sword", 15, "A sturdy iron blade")
@@ -243,12 +289,91 @@ func add_starter_items() -> void:
 	var health_potions = Item.create_consumable("Health Potion", 30, 0, "Restores 30 HP")
 	var stamina_potions = Item.create_consumable("Stamina Potion", 0, 50, "Restores 50 stamina")
 	
+	# Add starter digging tool
+	var basic_shovel = Item.create_power_drill()
+	
 	add_item(iron_sword)
 	add_item(leather_armor) 
+	add_item(basic_shovel)
 	add_item(health_potions, 3)
 	add_item(stamina_potions, 2)
-	add_gold(100)
+	add_gold(200)  # More gold to buy better tools
 	
 	# Auto-equip starter gear
 	equip_item("Iron Sword")
 	equip_item("Leather Armor")
+	equip_item("Basic Shovel")
+	
+	print("=== STARTER ITEMS ADDED ===")
+	print("- Basic combat gear equipped")
+	print("- Basic Shovel equipped (20% faster digging)")
+	print("- Consumables and gold added")
+
+# === TOOL SHOP/CRAFTING HELPERS ===
+func add_sample_digging_tools() -> void:
+	"""Add a variety of digging tools for testing"""
+	add_item(Item.create_iron_pickaxe())
+	add_item(Item.create_mining_drill())
+	add_item(Item.create_excavator_shovel())
+	add_item(Item.create_tunnel_bore())
+	add_item(Item.create_power_drill())
+	
+	print("Added sample digging tools to inventory!")
+	print_inventory()
+
+func can_afford_tool(tool_name: String) -> bool:
+	"""Check if player can afford a specific tool (for shop systems)"""
+	var tool_prices = {
+		"Basic Shovel": 25,
+		"Iron Pickaxe": 75,
+		"Mining Drill": 200,
+		"Excavator Shovel": 150,
+		"Tunnel Bore": 300,
+		"Power Drill": 500
+	}
+	
+	var price = tool_prices.get(tool_name, 0)
+	return gold >= price
+
+func buy_tool(tool_name: String) -> bool:
+	"""Buy a digging tool if player has enough gold"""
+	var tool_prices = {
+		"Basic Shovel": 25,
+		"Iron Pickaxe": 75,
+		"Mining Drill": 200,
+		"Excavator Shovel": 150,
+		"Tunnel Bore": 300,
+		"Power Drill": 500
+	}
+	
+	var price = tool_prices.get(tool_name, 0)
+	if price == 0:
+		print("Unknown tool: %s" % tool_name)
+		return false
+	
+	if not can_afford_tool(tool_name):
+		print("Cannot afford %s! Need %d gold, have %d" % [tool_name, price, gold])
+		return false
+	
+	var tool = null
+	match tool_name:
+		"Basic Shovel":
+			tool = Item.create_basic_shovel()
+		"Iron Pickaxe":
+			tool = Item.create_iron_pickaxe()
+		"Mining Drill":
+			tool = Item.create_mining_drill()
+		"Excavator Shovel":
+			tool = Item.create_excavator_shovel()
+		"Tunnel Bore":
+			tool = Item.create_tunnel_bore()
+		"Power Drill":
+			tool = Item.create_power_drill()
+	
+	if tool:
+		spend_gold(price)
+		add_item(tool)
+		print("Purchased %s for %d gold!" % [tool_name, price])
+		return true
+	
+	return false

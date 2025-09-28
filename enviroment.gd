@@ -2,7 +2,7 @@ extends Node2D
 class_name GameEnviroment
 
 const SIZE = 98
-const WIDTH = 30
+const WIDTH = 300
 const HEIGHT = 30
 
 enum TileType {
@@ -32,6 +32,8 @@ var structure_spawn_chance: float = 0.15  # 15% chance per attempt
 var max_structures: int = 8
 var current_structure_count: int = 0
 var min_distance_between_structures: int = 5
+var structure_areas: Array[Dictionary] = []
+var structure_background_textures: Dictionary = {}
 
 # Enemy system - minimal addition
 var enemies: Array[WorldEnemy] = []
@@ -417,18 +419,26 @@ func is_tile_digged(x: int, y: int) -> bool:
 	return false
 
 func _draw() -> void:
-	# Draw tiles first
+	# Draw regular tiles first
 	for y in range(HEIGHT):
 		for x in range(WIDTH):
 			var tile_type = grid_data[y][x]
-			var texture = tile_textures[tile_type]
+			var current_pos = Vector2i(x, y)
 			
-			if texture:
-				var rect = Rect2(x * SIZE, y * SIZE, SIZE, SIZE)
-				draw_texture_rect(texture, rect, false)
-			else:
-				print("WARNING: No texture found for tile type ", tile_type, " at ", x, ", ", y)
+			# Check if this position is part of a structure with background
+			if not is_position_in_structure_with_background(current_pos) or tile_type != TileType.DIGGED:
+				# Draw regular tile texture (not part of structure background or not digged)
+				var texture = tile_textures[tile_type]
+				if texture:
+					var rect = Rect2(x * SIZE, y * SIZE, SIZE, SIZE)
+					draw_texture_rect(texture, rect, false)
+				else:
+					print("WARNING: No texture found for tile type ", tile_type, " at ", x, ", ", y)
 	
+	# Draw structure backgrounds as single images spanning the entire structure
+	draw_structure_backgrounds()
+	
+	# Draw player position
 	var rect = Rect2((WIDTH/2) * SIZE, 0 * SIZE, SIZE, SIZE)
 	draw_rect(rect, Color.BLUE, true)
 	
@@ -498,3 +508,129 @@ func get_player_grid_position() -> Vector2i:
 		return Vector2i(int(player_reference.position.x / SIZE), int(player_reference.position.y / SIZE))
 	else:
 		return Vector2i(int(player_position.x / SIZE), int(player_position.y / SIZE))
+
+# Add this function to test the background feature
+func place_test_structure_with_background(start_x: int, start_y: int) -> bool:
+	var structure_data = structure_generator.get_structure("test_structure")
+	var pattern = structure_data["pattern"]
+	var background_path = structure_data["background"]
+	
+	if pattern.is_empty():
+		return false
+	
+	var pattern_height = pattern.size()
+	var pattern_width = pattern[0].size()
+	
+	# Check bounds
+	if start_x + pattern_width > WIDTH or start_y + pattern_height > HEIGHT:
+		return false
+	
+	# Dig the tiles according to pattern
+	var dug_tiles = []
+	for y in range(pattern_height):
+		for x in range(pattern_width):
+			if pattern[y][x] == 1:
+				var world_x = start_x + x
+				var world_y = start_y + y
+				dig_tile(world_x, world_y)
+				dug_tiles.append(Vector2i(world_x, world_y))
+	
+	# Store structure data with background if it exists
+	if background_path:
+		# Load the background texture if not already loaded
+		if not structure_background_textures.has(background_path):
+			structure_background_textures[background_path] = load(background_path)
+		
+		var structure_info = {
+			"bounds": Rect2i(start_x, start_y, pattern_width, pattern_height),
+			"background_path": background_path,
+			"tiles": dug_tiles
+		}
+		structure_areas.append(structure_info)
+	
+	queue_redraw()
+	return true
+
+func spawn_test_structure_near_player():
+	var player_grid = get_player_grid_position()
+	
+	# Try different offsets around the player
+	var offsets = [
+		Vector2i(3, 0),   # 3 tiles to the right
+		Vector2i(-3, 0),  # 3 tiles to the left
+		Vector2i(0, 3),   # 3 tiles down
+		Vector2i(0, -3),  # 3 tiles up
+		Vector2i(3, 3),   # 3 tiles diagonal
+		Vector2i(-3, -3), # 3 tiles diagonal opposite
+	]
+	
+	# Try each offset until we find a valid position
+	for offset in offsets:
+		var spawn_x = player_grid.x + offset.x
+		var spawn_y = player_grid.y + offset.y
+		
+		# Check if the structure would fit in bounds
+		if spawn_x >= 0 and spawn_y >= 0 and spawn_x + 3 <= WIDTH and spawn_y + 3 <= HEIGHT:
+			if is_area_suitable_for_test_structure(spawn_x, spawn_y):
+				place_test_structure_with_background(spawn_x, spawn_y)
+				print("Test structure with background spawned at: ", spawn_x, ", ", spawn_y)
+				return true
+	
+	print("Could not find suitable location for test structure near player")
+	return false
+
+func draw_structure_backgrounds():
+	for structure in structure_areas:
+		var background_path = structure["background_path"]
+		var bounds = structure["bounds"]
+		
+		if structure_background_textures.has(background_path):
+			var background_texture = structure_background_textures[background_path]
+			if background_texture:
+				# Draw background texture covering the structure area
+				var bg_rect = Rect2(
+					bounds.position.x * SIZE,
+					bounds.position.y * SIZE,
+					bounds.size.x * SIZE,
+					bounds.size.y * SIZE
+				)
+				# Make the background slightly transparent so tiles show through
+				var modulate_color = Color(1.0, 1.0, 1.0, 0.3)  # 30% opacity
+				draw_texture_rect(background_texture, bg_rect, false, modulate_color)
+
+func _input(event):
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_T:  # Press T to place test structure with background
+			spawn_test_structure_near_player()
+
+func is_area_suitable_for_test_structure(start_x: int, start_y: int) -> bool:
+	var player_grid = get_player_grid_position()
+	var structure_rect = Rect2i(start_x, start_y, 3, 3)
+	
+	if structure_rect.has_point(player_grid):
+		return false
+	
+	var undigged_count = 0
+	for y in range(start_y, start_y + 3):
+		for x in range(start_x, start_x + 3):
+			if grid_data[y][x] != TileType.DIGGED:
+				undigged_count += 1
+	
+	return undigged_count >= 5
+
+func get_structure_background_at_position(pos: Vector2i) -> Texture2D:
+	for structure in structure_areas:
+		var tiles = structure["tiles"]
+		if pos in tiles:
+			var background_path = structure["background_path"]
+			if structure_background_textures.has(background_path):
+				return structure_background_textures[background_path]
+	return null
+
+func is_position_in_structure_with_background(pos: Vector2i) -> bool:
+	for structure in structure_areas:
+		var tiles = structure["tiles"]
+		var background_path = structure["background_path"]
+		if pos in tiles and background_path:
+			return true
+	return false
