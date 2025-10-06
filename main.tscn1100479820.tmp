@@ -10,7 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://c8kcet2g72ga0" path="res://Tiles/DIGGED.png" id="5_w48qg"]
 [ext_resource type="Script" uid="uid://cmwb2x6tphwmp" path="res://Player/Movement/PlayerMovement.gd" id="6_kek77"]
 [ext_resource type="Script" uid="uid://d1m18dm5lb8vx" path="res://Player/Visual/PlayerVisual.gd" id="7_4c57u"]
-[ext_resource type="Script" uid="uid://beantk422snga" path="res://NPCs/WorldEnemy.gd" id="9_4c57u"]
+[ext_resource type="Script" uid="uid://beantk422snga" path="res://WorldEnemy.gd" id="9_4c57u"]
 [ext_resource type="Script" uid="uid://d1n6fjt5bhqxr" path="res://PlayerInventory.gd" id="9_kek77"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vivmo"]

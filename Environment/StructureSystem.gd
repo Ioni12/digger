@@ -8,6 +8,10 @@ var current_structure_count: int = 0
 var min_distance_between_structures: int = 5
 var structure_areas: Array[Dictionary] = []
 var structure_background_textures: Dictionary = {}
+var placed_positions: Array[Vector2i] = []
+
+# DEBUG: Track all created structures
+var debug_structures: Array[Dictionary] = []
 
 var rng: RandomNumberGenerator
 var structure_generator: StructureGenerator
@@ -118,6 +122,14 @@ func is_area_clear_for_structure(start_x: int, start_y: int, width: int, height:
 	return true
 
 func create_room(start_x: int, start_y: int, width: int, height: int):
+	# DEBUG: Track structure
+	debug_structures.append({
+		"type": "ROOM",
+		"pos": Vector2i(start_x, start_y),
+		"size": Vector2i(width, height),
+		"color": Color.GREEN
+	})
+	
 	for y in range(start_y, start_y + height):
 		for x in range(start_x, start_x + width):
 			if x == start_x or x == start_x + width - 1 or y == start_y or y == start_y + height - 1:
@@ -139,16 +151,40 @@ func create_room(start_x: int, start_y: int, width: int, height: int):
 			game_env.grid_data[y][start_x] = game_env.TileType.DIGGED
 
 func create_tunnel(start_x: int, start_y: int, width: int, height: int):
+	# DEBUG: Track structure
+	debug_structures.append({
+		"type": "TUNNEL",
+		"pos": Vector2i(start_x, start_y),
+		"size": Vector2i(width, height),
+		"color": Color.CYAN
+	})
+	
 	for y in range(start_y, start_y + height):
 		for x in range(start_x, start_x + width):
 			game_env.dig_tile(x, y)
 
 func create_chamber(start_x: int, start_y: int, size: int):
+	# DEBUG: Track structure
+	debug_structures.append({
+		"type": "CHAMBER",
+		"pos": Vector2i(start_x, start_y),
+		"size": Vector2i(size, size),
+		"color": Color.YELLOW
+	})
+	
 	for y in range(start_y, start_y + size):
 		for x in range(start_x, start_x + size):
 			game_env.dig_tile(x, y)
 
 func create_l_corridor(start_x: int, start_y: int, arm1_length: int, arm2_length: int):
+	# DEBUG: Track structure
+	debug_structures.append({
+		"type": "L-CORRIDOR",
+		"pos": Vector2i(start_x, start_y),
+		"size": Vector2i(arm1_length, arm2_length),
+		"color": Color.MAGENTA
+	})
+	
 	for x in range(start_x, start_x + arm1_length):
 		game_env.dig_tile(x, start_y)
 	for y in range(start_y, start_y + arm2_length):
@@ -212,6 +248,7 @@ func place_test_structure_with_background(start_x: int, start_y: int) -> bool:
 func regenerate_structures():
 	current_structure_count = 0
 	structure_areas.clear()
+	debug_structures.clear()  # Clear debug data too
 	generate_random_structures()
 
 func set_structure_generation_params(spawn_chance: float, max_count: int, min_distance: int):
@@ -290,3 +327,51 @@ func draw_structure_backgrounds():
 				# Make the background slightly transparent so tiles show through
 				var modulate_color = Color(1.0, 1.0, 1.0, 0.3)  # 30% opacity
 				game_env.draw_texture_rect(background_texture, bg_rect, false, modulate_color)
+
+func place_at_distance(from_pos: Vector2i, min_dist: int, max_dist: int, size: Vector2i) -> Vector2i:
+	for attempt in range(100):
+		# Random angle and distance
+		var angle = rng.randf() * TAU
+		var distance = rng.randf_range(min_dist, max_dist)
+		
+		# Calculate position
+		var x = from_pos.x + int(cos(angle) * distance)
+		var y = from_pos.y + int(sin(angle) * distance)
+		var pos = Vector2i(x, y)
+		
+		# Check if valid
+		if is_valid_placement(pos, size):
+			placed_positions.append(pos)
+			return pos
+	
+	return Vector2i(-1, -1)
+
+func is_valid_placement(pos: Vector2i, size: Vector2i) -> bool:
+	# Check bounds
+	if pos.x < 0 or pos.y < 0:
+		return false
+	if pos.x + size.x >= game_env.WIDTH or pos.y + size.y >= game_env.HEIGHT:
+		return false
+	
+	# Check distance from other structures
+	for existing in placed_positions:
+		if pos.distance_to(existing) < min_distance_between_structures:
+			return false
+	
+	# Check if area is clear
+	return is_area_clear_for_structure(pos.x, pos.y, size.x, size.y)
+
+# Create tunnel near player (replaces your startup tunnel)
+func create_tunnel_near_player() -> bool:
+	var player_pos = game_env.get_player_grid_position()
+	var tunnel_size = Vector2i(6, 1)  # 6 tiles long, 1 wide
+	
+	# Place tunnel 8-15 tiles from player
+	var tunnel_pos = place_at_distance(player_pos, 8, 11, tunnel_size)
+	
+	if tunnel_pos.x >= 0:
+		create_tunnel(tunnel_pos.x, tunnel_pos.y, tunnel_size.x, tunnel_size.y)
+		print("Tunnel created at: ", tunnel_pos)
+		return true
+	
+	return false

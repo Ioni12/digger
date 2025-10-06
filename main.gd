@@ -18,9 +18,9 @@ var is_paused: bool = false
 func _ready() -> void:
 	setup_game()
 	inventory_scene = preload("res://inventory.tscn")
-	pause_menu_scene = preload("res://PauseMenu.tscn")
-	if ResourceLoader.exists("res://DialogueUI.tscn"):
-		dialogue_ui_scene = preload("res://DialogueUI.tscn")
+	pause_menu_scene = preload("res://UIs/PauseMenu.tscn")
+	if ResourceLoader.exists("res://UIs/DialogueUI.tscn"):
+		dialogue_ui_scene = preload("res://UIs/DialogueUI.tscn")
 		print("DialogueUI.tscn loaded successfully")
 	else:
 		print("DialogueUI.tscn not found - dialogue system disabled")
@@ -169,7 +169,7 @@ func setup_game():
 	# IMPORTANT: Set the player reference in EncounterManager
 	EncounterManager.set_player_reference(player)
 	
-	var ui_scene = load("res://ui.tscn")
+	var ui_scene = load("res://UIs/ui.tscn")
 	ui = ui_scene.instantiate()
 	add_child(ui)
 	
@@ -198,12 +198,23 @@ func setup_camera():
 	camera.limit_top = 0
 	camera.limit_right = max(env_width, viewport_size.x)
 	camera.limit_bottom = max(env_height, viewport_size.y)
+	
+	if player:
+		var target_pos = player.position + Vector2(environment.SIZE/2, environment.SIZE/2)
+		var half_viewport = viewport_size / 2
+		
+		target_pos.x = max(target_pos.x, half_viewport.x)
+		target_pos.y = max(target_pos.y, half_viewport.y)
+		target_pos.x = min(target_pos.x, env_width - half_viewport.x)
+		target_pos.y = min(target_pos.y, env_height - half_viewport.y)
+		
+		camera.position = target_pos
 
 func setup_dialogue_ui():
 	# Load the scene if not already loaded
 	if not dialogue_ui_scene:
-		if ResourceLoader.exists("res://DialogueUI.tscn"):
-			dialogue_ui_scene = preload("res://DialogueUI.tscn")
+		if ResourceLoader.exists("res://UIs/DialogueUI.tscn"):
+			dialogue_ui_scene = preload("res://UIs/DialogueUI.tscn")
 		else:
 			print("ERROR: DialogueUI.tscn not found")
 			return
@@ -253,7 +264,7 @@ func game_over():
 	await get_tree().create_timer(2.0).timeout
 	get_tree().paused = false
 	
-	var error = get_tree().change_scene_to_file("res://GameOver.tscn")
+	var error = get_tree().change_scene_to_file("res://UIs/GameOver.tscn")
 	if error != OK:
 		print("Error loading Game Over scene: ", error)
 		get_tree().reload_current_scene()

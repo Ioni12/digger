@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://dwrp4nm6pfqdv"]
 
-[ext_resource type="Script" uid="uid://qu647sw3v72r" path="res://QTESystem.gd" id="1_1fh02"]
+[ext_resource type="Script" uid="uid://qu647sw3v72r" path="res://Battle_System/QTESystem.gd" id="1_1fh02"]
 
 [node name="QTESystem" type="Control"]
 layout_mode = 3

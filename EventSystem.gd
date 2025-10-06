@@ -12,7 +12,7 @@ func trigger_initial_npc_spawn():
 	spawn_guide_near_player()
 
 func spawn_guide_near_player():
-	var npc = spawn_npc_near_player_in_tunnel(WorldNPC.NPCType.NEIGHBOUR, 5, 11)
+	var npc = spawn_npc_near_player_in_tunnel(WorldNPC.NPCType.NEIGHBOUR, 5, 15)
 	if npc:
 		print("Initial guide spawned near player!")
 		show_initial_npc_popup()
@@ -52,7 +52,7 @@ func is_position_free_for_npc(x: int, y: int) -> bool:
 	return true
 
 func show_initial_npc_popup():
-	var popup_scene = preload("res://ResourcePopup.tscn")
+	var popup_scene = preload("res://UIs/ResourcePopup.tscn")
 	var popup = popup_scene.instantiate()
 	get_tree().current_scene.add_child(popup)
 	

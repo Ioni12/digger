@@ -306,7 +306,7 @@ func move_to_position(new_x: int, new_y: int):
 		heal_at_sanctuary()
 
 func show_resource_popup(text: String, color: Color):
-	var popup_scene = preload("res://ResourcePopup.tscn")
+	var popup_scene = preload("res://UIs/ResourcePopup.tscn")
 	var popup = popup_scene.instantiate()
 	
 	# Add to the scene tree (use main scene or UI layer)

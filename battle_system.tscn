@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://d1fgjqgvdvtpi"]
 
-[ext_resource type="Script" uid="uid://mqlptb1wsaxc" path="res://battle_system.gd" id="1_n13d2"]
+[ext_resource type="Script" uid="uid://mqlptb1wsaxc" path="res://Battle_System/battle_system.gd" id="1_n13d2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_c487d"]
 bg_color = Color(0.88533, 0.275222, 0.247616, 1)

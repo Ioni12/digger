@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://b3qs4yuirlv52"]
+[gd_scene load_steps=2 format=3 uid="uid://3n4rvm622gtt"]
 
-[ext_resource type="Script" uid="uid://b0bj4ch87l6a8" path="res://MainMenu.gd" id="1_i26rj"]
+[ext_resource type="Script" uid="uid://br408col3h81n" path="res://UIs/GameOver.gd" id="1_40baj"]
 
 [node name="Control" type="Control"]
 layout_mode = 3
@@ -9,7 +9,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_i26rj")
+script = ExtResource("1_40baj")
 
 [node name="ColorRect" type="ColorRect" parent="."]
 layout_mode = 1
@@ -50,6 +50,9 @@ text = "Digger"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="GameOverTitle" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
 [node name="Start" type="Button" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Start"
@@ -57,3 +60,7 @@ text = "Start"
 [node name="Quit" type="Button" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Quit"
+
+[node name="MainMenuButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Start"
