@@ -1,7 +1,7 @@
 extends Node2D
 class_name GameEnviroment
 
-const SIZE = 98
+const SIZE = 72
 const WIDTH = 300
 const HEIGHT = 300
 
@@ -35,6 +35,12 @@ var structure_system: StructureSystem
 var visible_tile_bounds: Rect2i = Rect2i()
 var last_camera_position: Vector2 = Vector2.ZERO
 var camera_moved_threshold: float = SIZE * 0.5  # Recalculate when camera moves half a tile
+var chests: Dictionary = {}  # Vector2i -> chest_state (opened/closed)
+var chest_spawn_chance: float = 0.10
+var chest_texture_closed: Texture2D
+var chest_texture_opened: Texture2D
+var chest_prompt: Label
+var current_nearby_chest: Vector2i = Vector2i(-1, -1)
 
 func _ready() -> void:
 	rng = RandomNumberGenerator.new()
@@ -50,11 +56,16 @@ func _ready() -> void:
 	add_child(entity_manager)
 	structure_system.generate_random_structures()
 	structure_system.create_tunnel_near_player()
+	structure_system.create_cave_near_player()
 	entity_manager.spawn_all_entities()
+	
+	load_chest_textures()
+	setup_chest_prompt()
 
 func _process(delta):
 	entity_manager.check_enemy_encounters()
 	entity_manager.check_npc_interactions()
+	check_chest_interaction()
 	
 	# VIEWPORT CULLING: Only recalculate visible bounds when camera moves significantly
 	var camera = get_viewport().get_camera_2d()
@@ -103,8 +114,6 @@ func setup_grid_with_noise():
 					var tile_type = TileType.DRY if noise_value < 0 else TileType.ROCKY
 					row.append(tile_type)
 		grid_data.append(row)
-		
-	
 
 # VIEWPORT CULLING: Calculate which tiles are visible
 func update_visible_bounds(camera: Camera2D):
@@ -137,6 +146,9 @@ func update_visible_bounds(camera: Camera2D):
 func dig_tile(x: int, y: int) -> TileType:
 	if grid_data[y][x] != TileType.DIGGED:
 		grid_data[y][x] = TileType.DIGGED
+		
+		if rng.randf() < chest_spawn_chance:
+			chests[Vector2i(x, y)] = false
 		
 		# Tell map to update
 		if has_node("/root/Map"):  # Adjust path as needed
@@ -176,6 +188,8 @@ func _draw() -> void:
 					draw_texture_rect(texture, rect, false)
 	
 	structure_system.draw_structure_backgrounds()
+	
+	draw_chests()
 	
 	# Draw player position
 	var rect = Rect2((WIDTH/2) * SIZE, 0 * SIZE, SIZE, SIZE)
@@ -323,3 +337,88 @@ func get_structure_digged_tiles() -> Array:
 			if grid_data[y][x] == TileType.DIGGED and not (x == WIDTH/2 and y == 0):
 				structure_digged.append(Vector2i(x, y))
 	return structure_digged
+
+func load_chest_textures():
+	chest_texture_closed = load("res://chest_closed.png")
+	chest_texture_opened = load("res://chest_opened.png")
+
+func draw_chests():
+	for chest_pos in chests.keys():
+		var is_opened = chests[chest_pos]
+		var texture = chest_texture_opened if is_opened else chest_texture_closed
+		
+		if texture:
+			var rect = Rect2(chest_pos.x * SIZE, chest_pos.y * SIZE, SIZE, SIZE)
+			draw_texture_rect(texture, rect, false)
+
+func check_chest_interaction():
+	var player_grid_pos = get_player_grid_position()
+	var chest_found = false
+	
+	# Check if player is on a chest tile
+	if chests.has(player_grid_pos) and not chests[player_grid_pos]:
+		current_nearby_chest = player_grid_pos
+		chest_found = true
+		show_chest_prompt()
+	else:
+		# Check adjacent tiles (optional - if you want 1-tile radius)
+		for offset in [Vector2i(1,0), Vector2i(-1,0), Vector2i(0,1), Vector2i(0,-1)]:
+			var check_pos = player_grid_pos + offset
+			if chests.has(check_pos) and not chests[check_pos]:
+				current_nearby_chest = check_pos
+				chest_found = true
+				show_chest_prompt()
+				break
+	
+	if not chest_found:
+		current_nearby_chest = Vector2i(-1, -1)
+		hide_chest_prompt()
+	
+	# Handle interaction input
+	if chest_found and Input.is_action_just_pressed("interact"):
+		open_chest(current_nearby_chest)
+
+func open_chest(chest_pos: Vector2i):
+	if chests.has(chest_pos):
+		chests[chest_pos] = true  # Mark as opened
+		hide_chest_prompt()
+		queue_redraw()  # Redraw to show opened chest sprite
+		
+		# Give player loot
+		give_chest_loot()
+
+func give_chest_loot():
+	# Implement your loot system
+	print("You found treasure!")
+	# Could call: player_reference.add_gold(50)
+
+func setup_chest_prompt():
+	# Create a CanvasLayer so UI stays on screen
+	var ui_layer = CanvasLayer.new()
+	add_child(ui_layer)
+	
+	# Create the prompt label
+	chest_prompt = Label.new()
+	chest_prompt.text = "Press E to Open Chest"
+	chest_prompt.visible = false
+	
+	# Style it
+	chest_prompt.add_theme_font_size_override("font_size", 24)
+	chest_prompt.add_theme_color_override("font_color", Color.WHITE)
+	chest_prompt.add_theme_color_override("font_outline_color", Color.BLACK)
+	chest_prompt.add_theme_constant_override("outline_size", 2)
+	
+	# Position it (bottom center of screen)
+	chest_prompt.position = Vector2(500, 600)  # Adjust these values
+	chest_prompt.anchor_left = 0.5
+	chest_prompt.anchor_right = 0.5
+	
+	ui_layer.add_child(chest_prompt)
+
+func show_chest_prompt():
+	if chest_prompt:
+		chest_prompt.visible = true
+
+func hide_chest_prompt():
+	if chest_prompt:
+		chest_prompt.visible = false

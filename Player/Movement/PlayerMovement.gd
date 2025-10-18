@@ -33,9 +33,13 @@ var current_dig_failed: bool = false
 var pending_dig_positions: Array = []
 var dig_direction: Vector2i = Vector2i.ZERO  # For line patterns
 
+var dig_sound: AudioStreamPlayer
+
+
 func _ready():
 	player_stats = get_parent().get_node("PlayerStats") if get_parent().has_node("PlayerStats") else null
 	stamina_system = get_parent().get_node("StaminaSystem") if get_parent().has_node("StaminaSystem") else null
+	
 	
 	if environment:
 		target_position = Vector2(grid_x * environment.SIZE, grid_y * environment.SIZE)
@@ -206,6 +210,13 @@ func start_digging(new_x: int, new_y: int):
 	move_timer = 0.0
 	
 	print("Player is digging...")
+	
+	var sound = get_dig_sound()
+	if sound:
+		print("Playing dig sound...")
+		sound.play()
+	else:
+		print("ERROR: dig_sound is null!")
 
 func update_digging(delta: float):
 	"""Update digging animation and timer - enhanced for multi-tile feedback"""
@@ -251,27 +262,21 @@ func finish_digging():
 					var revealed_terrain = environment.dig_tile(pos.x, pos.y)
 					total_tiles_dug += 1
 					
-					# Lower chance for items per tile to balance multi-tile digging
-					var item_chance = 0.3 if pending_dig_positions.size() == 1 else 0.15
+					# FIXED: Use RewardSystem
+					var item_chance = 0.5 if pending_dig_positions.size() == 1 else 0.3
 					if randf() < item_chance:
-						var player = get_parent()
-						var random_item = Item.create_misc("Stone", "A common stone", 1)
-						random_item.is_stackable = true
-						player.add_item(random_item)
-						items_found += 1
+						var reward = RewardSystem.roll()
+						if not reward.is_empty():
+							var item = RewardSystem.create_item(reward)
+							if item:
+								var player = get_parent()
+								player.add_item(item)
+								items_found += 1
+								show_resource_popup("+1 %s" % reward["name"], reward["color"])
 					
 					# Check for encounter only on the primary tile (first one)
 					if pos == pending_dig_positions[0]:
 						check_for_encounter(current_terrain)
-		
-		# Show summary popup for multi-tile operations
-		if total_tiles_dug > 1:
-			var summary_text = "%d tiles dug" % total_tiles_dug
-			if items_found > 0:
-				summary_text += ", +%d items" % items_found
-			show_resource_popup(summary_text, Color.CYAN)
-		elif items_found > 0:
-			show_resource_popup("+1 Stone", Color.GRAY)
 		
 		print("Dig summary: %d tiles dug, %d items found" % [total_tiles_dug, items_found])
 	else:
@@ -456,3 +461,10 @@ func debug_spawn_tools():
 		player.add_item(Item.create_tunnel_bore())
 		player.add_item(Item.create_power_drill())
 		print("Added all sample digging tools to inventory!")
+
+func get_dig_sound() -> AudioStreamPlayer:
+	"""Lazily get the dig sound player"""
+	if not dig_sound and get_parent():
+		if get_parent().has_node("DigSound"):
+			dig_sound = get_parent().get_node("DigSound")
+	return dig_sound

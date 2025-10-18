@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://dejku7a7ai44s"]
+[gd_scene load_steps=19 format=3 uid="uid://dejku7a7ai44s"]
 
 [ext_resource type="Script" uid="uid://4hkgjhyuer0i" path="res://main.gd" id="1_0xm2m"]
 [ext_resource type="Script" uid="uid://wxwoyw1td3sg" path="res://enviroment.gd" id="1_ig7tw"]
@@ -12,6 +12,8 @@
 [ext_resource type="Script" uid="uid://d1m18dm5lb8vx" path="res://Player/Visual/PlayerVisual.gd" id="7_4c57u"]
 [ext_resource type="Script" uid="uid://beantk422snga" path="res://NPCs/WorldEnemy.gd" id="9_4c57u"]
 [ext_resource type="Script" uid="uid://d1n6fjt5bhqxr" path="res://PlayerInventory.gd" id="9_kek77"]
+[ext_resource type="AudioStream" uid="uid://d2qqksagrupfk" path="res://audio/shovel.mp3" id="12_w48qg"]
+[ext_resource type="AudioStream" uid="uid://dbu4yfsa2o625" path="res://audio/old-mine-ambience-200677.mp3" id="13_ycdy4"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vivmo"]
 texture = ExtResource("3_dg77c")
@@ -136,5 +138,12 @@ script = ExtResource("7_4c57u")
 [node name="PlayerInventory" type="Node" parent="Player"]
 script = ExtResource("9_kek77")
 
+[node name="DigSound" type="AudioStreamPlayer" parent="Player"]
+stream = ExtResource("12_w48qg")
+
 [node name="Enemie" type="Node2D" parent="."]
 script = ExtResource("9_4c57u")
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("13_ycdy4")
+autoplay = true

@@ -4,7 +4,7 @@ class_name DialogueUI
 
 @onready var dialogue_panel: Panel = $DialoguePanel
 @onready var npc_name_label: Label = $DialoguePanel/VBoxContainer/NPCNameLabel
-@onready var dialogue_text: Label = $DialoguePanel/VBoxContainer/DialogueText
+@onready var dialogue_text: RichTextLabel = $DialoguePanel/VBoxContainer/DialogueText
 @onready var continue_button: Button = $DialoguePanel/VBoxContainer/HBoxContainer/ContinueButton
 @onready var trade_button: Button = $DialoguePanel/VBoxContainer/HBoxContainer/TradeButton
 @onready var close_button: Button = $DialoguePanel/VBoxContainer/HBoxContainer/CloseButton

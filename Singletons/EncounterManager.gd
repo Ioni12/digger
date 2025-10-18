@@ -105,7 +105,7 @@ func start_battle():
 
 func create_battle_popup():
 	var battle_popup = PopupPanel.new()
-	battle_popup.size = Vector2(800, 600)
+	battle_popup.size = Vector2(1280, 720)
 	battle_popup.position = (get_viewport().size - battle_popup.size) / 2
 	battle_popup.set_flag(Window.FLAG_RESIZE_DISABLED, true)
 	

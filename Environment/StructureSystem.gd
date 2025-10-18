@@ -313,20 +313,44 @@ func draw_structure_backgrounds():
 	for structure in structure_areas:
 		var background_path = structure["background_path"]
 		var bounds = structure["bounds"]
+		var tiles = structure["tiles"]
 		
 		if structure_background_textures.has(background_path):
 			var background_texture = structure_background_textures[background_path]
 			if background_texture:
-				# Draw background texture covering the structure area
-				var bg_rect = Rect2(
-					bounds.position.x * game_env.SIZE,
-					bounds.position.y * game_env.SIZE,
-					bounds.size.x * game_env.SIZE,
-					bounds.size.y * game_env.SIZE
-				)
-				# Make the background slightly transparent so tiles show through
-				var modulate_color = Color(1.0, 1.0, 1.0, 0.3)  # 30% opacity
-				game_env.draw_texture_rect(background_texture, bg_rect, false, modulate_color)
+				var texture_size = background_texture.get_size()
+				var pattern_width = bounds.size.x
+				var pattern_height = bounds.size.y
+				
+				# Calculate how much of the texture each tile should show
+				var tile_texture_width = texture_size.x / pattern_width
+				var tile_texture_height = texture_size.y / pattern_height
+				
+				# Draw each tile with its corresponding piece of the background
+				for tile_pos in tiles:
+					# Calculate which part of the pattern this tile is
+					var local_x = tile_pos.x - bounds.position.x
+					var local_y = tile_pos.y - bounds.position.y
+					
+					# Calculate source rectangle (which part of image to use)
+					var source_rect = Rect2(
+						local_x * tile_texture_width,
+						local_y * tile_texture_height,
+						tile_texture_width,
+						tile_texture_height
+					)
+					
+					# Calculate destination rectangle (where to draw it)
+					var dest_rect = Rect2(
+						tile_pos.x * game_env.SIZE,
+						tile_pos.y * game_env.SIZE,
+						game_env.SIZE,
+						game_env.SIZE
+					)
+					
+					var modulate_color = Color(1.0, 1.0, 1.0, 0.9)
+					# Draw the specific region of the texture
+					game_env.draw_texture_rect_region(background_texture, dest_rect, source_rect, modulate_color)
 
 func place_at_distance(from_pos: Vector2i, min_dist: int, max_dist: int, size: Vector2i) -> Vector2i:
 	for attempt in range(100):
@@ -375,3 +399,68 @@ func create_tunnel_near_player() -> bool:
 		return true
 	
 	return false
+
+func create_cave_near_player() -> bool:
+	var player_pos = game_env.get_player_grid_position()
+	var cave_size = Vector2i(8, 8)
+	
+	var cave_pos = place_at_distance(player_pos, 12, 20, cave_size)
+	
+	if cave_pos.x >= 0:
+		place_cave_with_background(cave_pos.x, cave_pos.y)
+		return true
+	
+	return false
+
+func place_cave_with_background(start_x: int, start_y: int) -> bool:
+	var structure_data = structure_generator.get_structure("cave")
+	var pattern = structure_data["pattern"]
+	var background_path = structure_data["background"]
+	
+	if pattern.is_empty():
+		return false
+	
+	var pattern_height = pattern.size()
+	var pattern_width = pattern[0].size()
+	
+	debug_structures.append({
+		"type": "CAVE",
+		"pos": Vector2i(start_x, start_y),
+		"size": Vector2i(pattern_width, pattern_height),
+		"color": Color.ORANGE
+	})
+	
+	if start_x + pattern_width > game_env.WIDTH or start_y + pattern_height > game_env.HEIGHT:
+		return false
+	
+	var dug_tiles = []  # Only tiles that should show background (value 1)
+	
+	for y in range(pattern_height):
+		for x in range(pattern_width):
+			var cell_value = pattern[y][x]
+			var world_x = start_x + x
+			var world_y = start_y + y
+			
+			match cell_value:
+				0:  # Don't touch
+					pass
+				1:  # DIGGED - shows background
+					game_env.grid_data[world_y][world_x] = game_env.TileType.DIGGED
+					dug_tiles.append(Vector2i(world_x, world_y))
+				2:  # DRY
+					game_env.grid_data[world_y][world_x] = game_env.TileType.DRY
+				3:  # ROCKY - don't add to dug_tiles so no background shows
+					game_env.grid_data[world_y][world_x] = game_env.TileType.ROCKY
+	
+	if background_path:
+		if not structure_background_textures.has(background_path):
+			structure_background_textures[background_path] = load(background_path)
+		
+		var structure_info = {
+			"bounds": Rect2i(start_x, start_y, pattern_width, pattern_height),
+			"background_path": background_path,
+			"tiles": dug_tiles  # Only DIGGED tiles with background
+		}
+		structure_areas.append(structure_info)
+	
+	return true

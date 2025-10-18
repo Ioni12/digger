@@ -24,11 +24,20 @@ var qte_choice_active = false
 var qte_choice_timer = 3.0  # 3 seconds to decide
 var qte_choice_time_remaining = 0.0
 
+# Run mechanics
+var run_attempt_count = 0
+var base_run_success_chance = 0.4  # 40% base chance
+var run_difficulty_increase = 0.15  # Each attempt reduces chance by 15%
+
 # QTE System
 var qte_system: QTESystem
 
 # Reference to the actual player object
 var actual_player: Player
+
+var player_sprite: Sprite2D
+var enemy_sprite: Sprite2D
+
 
 @onready var battle_log_text: RichTextLabel = %BattleLog
 @onready var action_panel: VBoxContainer = $BattleUI/Actions/ActionPanel
@@ -40,10 +49,17 @@ var actual_player: Player
 @onready var enemy_hp_label: Label = %EnemyHPLabel
 @onready var attack_button: Button = $BattleUI/Actions/ActionPanel/ActionButtons/Attack
 @onready var defend_button: Button = $BattleUI/Actions/ActionPanel/ActionButtons/Defend
+@onready var run: Button = $BattleUI/Actions/ActionPanel/ActionButtons/Run
 @onready var restart_button: Button = %Restart
 @onready var actions: PanelContainer = $BattleUI/Actions
 @onready var qte_choice_label: RichTextLabel = $BattleUI/ChoiceLabel
 @onready var qte_choice_timer_bar: ProgressBar = $BattleUI/TimerBar
+@onready var items_panel: PanelContainer = $BattleUI/ItemsPanel
+@onready var items_list: ItemList = $BattleUI/ItemsPanel/MarginContainer/VBoxContainer/ItemsList
+@onready var use_item_button: Button = $BattleUI/ItemsPanel/MarginContainer/VBoxContainer/HBoxContainer/UseButton
+@onready var back_button: Button = $BattleUI/ItemsPanel/MarginContainer/VBoxContainer/HBoxContainer/BackButton
+@onready var items_button: Button = $BattleUI/Actions/ActionPanel/ActionButtons/Items
+@onready var battle_music: AudioStreamPlayer = AudioStreamPlayer.new()
 
 var available_actions = [
 	{"name": "Attack", "type": "attack", "cost": 0},
@@ -55,7 +71,9 @@ var available_actions = [
 func _ready():
 	initialize_battle()
 	setup_ui()
+	setup_run_button()
 	setup_qte_system()
+	setup_battle_music()
 	start_battle()
 
 func _process(delta):
@@ -82,8 +100,8 @@ func handle_qte_choice_input(event):
 	
 func initialize_battle():
 	print("Initializing battle..." + "\n")
-	
-	# Get the actual player reference instead of stats dictionary
+	run_attempt_count = 0
+
 	actual_player = EncounterManager.player_reference
 	
 	if not actual_player:
@@ -123,8 +141,39 @@ func initialize_battle():
 func setup_ui():
 	setup_attack_button()
 	setup_defend_button()
+	setup_items_button()
 	setup_restart_button()
 	update_ui()
+	
+	var bg_sprite = Sprite2D.new()
+	bg_sprite.texture = load("res://backrounds/Background Complete.png")
+	bg_sprite.z_index = -1
+	
+	bg_sprite.centered = true
+	bg_sprite.position = Vector2(640, 360)  # Center of 1280x720
+
+	# Scale to fit 1280x720
+	var texture_size = bg_sprite.texture.get_size()
+	bg_sprite.scale = Vector2(1280.0 / texture_size.x, 720.0 / texture_size.y)
+	
+	add_child(bg_sprite)
+	move_child(bg_sprite, 0)
+	
+	player_sprite = Sprite2D.new()
+	player_sprite.texture = load("res://goku.png")
+	player_sprite.z_index = 1
+	player_sprite.centered = true
+	player_sprite.position = Vector2(200, 350)
+	player_sprite.scale = Vector2(30.0 / texture_size.x, 30.0 / texture_size.y)
+	add_child(player_sprite)
+	
+	enemy_sprite = Sprite2D.new()
+	enemy_sprite.texture = load("res://cell1.webp")
+	enemy_sprite.z_index = 1
+	enemy_sprite.centered = true
+	enemy_sprite.position = Vector2(1050, 350)
+	enemy_sprite.scale = Vector2(150.0 / texture_size.x, 150.0 / texture_size.y)
+	add_child(enemy_sprite)
 	
 	# Hide QTE UI initially
 	qte_choice_label.visible = false
@@ -137,6 +186,7 @@ func setup_qte_system():
 	qte_system.qte_cancelled.connect(_on_qte_cancelled)
 
 func start_battle():
+	battle_music.play()
 	add_log("Battle begins!")
 	add_log(player_character.char_name + " (Speed: " + str(player_character.base_speed) + ") vs " + enemy.char_name + " (Speed: " + str(enemy.base_speed) + ")")
 	
@@ -175,6 +225,10 @@ func update_action_buttons():
 		attack_button.disabled = current_state != BattleState.PLAYER_TURN
 	if defend_button:
 		defend_button.disabled = current_state != BattleState.PLAYER_TURN
+	if items_button:
+		items_button.disabled = current_state != BattleState.PLAYER_TURN
+	if run:
+		run.disabled = current_state != BattleState.PLAYER_TURN
 
 func process_player_action(action: Dictionary):
 	match action.type:
@@ -317,6 +371,7 @@ func sync_player_health():
 func end_battle(player_won: bool):
 	# Final health sync
 	sync_player_health()
+	battle_music.stop()
 	
 	if player_won:
 		current_state = BattleState.BATTLE_WON
@@ -427,3 +482,202 @@ func calculate_damage(attack_power: int, defense: int) -> int:
 	var base_damage = attack_power - (defense / 2)
 	var damage = max(1, base_damage + randi() % 8)
 	return damage
+
+func setup_battle_music():
+	battle_music.bus = "Master"  # Optional: set audio bus
+	battle_music.volume_db = 0
+	add_child(battle_music)
+	
+	var music = load("res://battle-music-1-looping-theme-225558.mp3")
+	if music:
+		battle_music.stream = music
+	else:
+		print("ERROR: Battle music file not found!")
+
+func setup_items_button():
+	if items_list:
+		items_list.item_selected.connect(_on_item_selected)
+	
+	if use_item_button:
+		use_item_button.text = "Use"
+		use_item_button.pressed.connect(_on_use_item_confirmed)
+	
+	if back_button:
+		back_button.text = "Back"
+		back_button.pressed.connect(_on_items_back)
+	
+	if items_button:
+		items_button.text = "Items"
+		items_button.pressed.connect(_on_items_pressed)
+	
+	if items_panel:
+		items_panel.visible = false
+
+# NEW: Items Button Pressed
+func _on_items_pressed():
+	if current_state != BattleState.PLAYER_TURN:
+		return
+	
+	current_state = BattleState.ANIMATING
+	show_items_menu()
+
+# NEW: Show Items Menu
+func show_items_menu():
+	print("=== SHOWING ITEMS MENU ===")
+	print("actions visible before: ", actions.visible)
+	print("items_panel visible before: ", items_panel.visible)
+	print("items_list item_count: ", items_list.item_count)
+	
+	actions.visible = false
+	items_panel.visible = true
+	
+	print("actions visible after: ", actions.visible)
+	print("items_panel visible after: ", items_panel.visible)
+	
+	refresh_items_display()
+	
+	print("items_list item_count after refresh: ", items_list.item_count)
+	print("items_list visible: ", items_list.visible)
+	print("items_list size: ", items_list.size)
+	
+	current_state = BattleState.PLAYER_TURN
+
+# NEW: Refresh Items Display
+# NEW: Refresh Items Display - Simple Debug
+func refresh_items_display():
+	items_list.clear()
+	
+	print("\n=== REFRESH ITEMS DISPLAY ===")
+	print("actual_player: ", actual_player)
+	print("actual_player is null: ", actual_player == null)
+	
+	if actual_player == null:
+		print("ERROR: actual_player is null!")
+		return
+	
+	print("actual_player.inventory: ", actual_player.inventory)
+	
+	var player_inventory = actual_player.inventory
+	
+	if player_inventory == null:
+		print("ERROR: player_inventory is null!")
+		return
+	
+	print("inventory.items: ", player_inventory.items)
+	print("items array size: ", player_inventory.items.size())
+	
+	# List all items regardless of type
+	for i in range(player_inventory.items.size()):
+		var item = player_inventory.items[i]
+		print("\nItem %d: %s" % [i, item.name])
+		print("  Type: %s (index %d)" % [Item.ItemType.keys()[item.item_type], item.item_type])
+		print("  Can consume: %s" % item.can_be_consumed())
+		print("  Quantity: %d" % item.quantity)
+		
+		if item.can_be_consumed():
+			items_list.add_item("%s x%d" % [item.name, item.quantity])
+	
+	print("\nItems displayed in list: %d" % items_list.item_count)
+
+# NEW: Item Selected
+func _on_item_selected(index: int):
+	# Item is selected, ready to use
+	pass
+
+# NEW: Use Item Confirmed
+func _on_use_item_confirmed():
+	if current_state != BattleState.PLAYER_TURN:
+		return
+	
+	var selected_indices = items_list.get_selected_items()
+	if selected_indices.is_empty():
+		add_log("Select an item first!")
+		return
+	
+	var selected_index = selected_indices[0]
+	var selected_text = items_list.get_item_text(selected_index)
+	var item_name = selected_text.split(" x")[0]  # Extract name before " x"
+	
+	current_state = BattleState.ANIMATING
+	use_consumable_item(item_name)
+
+# NEW: Use Consumable Item
+# NEW: Use Consumable Item
+func use_consumable_item(item_name: String):
+	print("\n=== USING CONSUMABLE ITEM: %s ===" % item_name)
+	
+	var player_inventory = actual_player.inventory
+	
+	print("Inventory exists: ", player_inventory != null)
+	print("Attempting to use item...")
+	
+	var use_result = player_inventory.use_item(item_name)
+	print("use_item() returned: ", use_result)
+	
+	if use_result:
+		print("Item used successfully!")
+		
+		# CRITICAL FIX: Sync the actual player's health back to the battle character
+		player_character.current_hp = actual_player.current_hp
+		
+		# Now update the UI with the synced health
+		update_ui()
+		add_log(player_character.char_name + " used " + item_name + "!")
+		
+		# Close items menu
+		items_panel.visible = false
+		actions.visible = true
+		
+		complete_player_turn()
+	else:
+		print("Failed to use item - checking why...")
+		var item = player_inventory.find_item(item_name)
+		if item:
+			print("Item found: %s" % item.name)
+			print("Can be consumed: %s" % item.can_be_consumed())
+		else:
+			print("Item not found in inventory!")
+		
+		add_log("Failed to use " + item_name)
+		current_state = BattleState.PLAYER_TURN
+
+# NEW: Back Button Pressed
+func _on_items_back():
+	items_panel.visible = false
+	actions.visible = true
+	current_state = BattleState.PLAYER_TURN
+	update_ui()
+
+func setup_run_button():
+	if run:
+		run.text = "Run"
+		run.pressed.connect(_on_run_pressed)
+
+func _on_run_pressed():
+	if current_state != BattleState.PLAYER_TURN:
+		return
+	
+	current_state = BattleState.ANIMATING
+	attempt_run()
+
+func attempt_run():
+	run_attempt_count += 1
+	
+	# Calculate success chance (decreases with each attempt)
+	var success_chance = base_run_success_chance - (run_attempt_count - 1) * run_difficulty_increase
+	success_chance = clamp(success_chance, 0.1, 1.0)  # Keep between 10% and 100%
+	
+	if randf() < success_chance:
+		add_log(player_character.char_name + " successfully fled from battle!")
+		end_battle_escape()
+	else:
+		add_log(player_character.char_name + " failed to escape!")
+		complete_player_turn()  # Continue to enemy turn
+
+func end_battle_escape():
+	current_state = BattleState.BATTLE_WON  # Or create BATTLE_ESCAPED state
+	battle_music.stop()
+	
+	await get_tree().create_timer(1.0).timeout
+	EncounterManager.battle_ended.emit(false, 0)  # No exp reward for running
+	close_battle_popup()

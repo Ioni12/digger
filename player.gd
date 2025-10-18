@@ -94,6 +94,14 @@ func _ready() -> void:
 	_setup_component("PlayerInventory", PlayerInventory)
 	_setup_component("PlayerInteraction", PlayerInteraction)
 	
+	if not has_node("DigSound"):
+		var dig_sound_player = AudioStreamPlayer.new()
+		dig_sound_player.name = "DigSound"
+		dig_sound_player.stream = load("res://audio/shovel.mp3")  # Change to your sound path!
+		dig_sound_player.volume_db = -10.0
+		add_child(dig_sound_player)
+		print("Created DigSound node")
+	
 	setup_inventory()
 	
 	_connect_signals()

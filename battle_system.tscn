@@ -170,6 +170,14 @@ text = "Attack"
 layout_mode = 2
 text = "Defend"
 
+[node name="Items" type="Button" parent="BattleUI/Actions/ActionPanel/ActionButtons"]
+layout_mode = 2
+text = "Items"
+
+[node name="Run" type="Button" parent="BattleUI/Actions/ActionPanel/ActionButtons"]
+layout_mode = 2
+text = "Run"
+
 [node name="Restart" type="Button" parent="BattleUI"]
 unique_name_in_owner = true
 layout_mode = 1
@@ -201,3 +209,48 @@ offset_top = -0.120056
 offset_right = 145.0
 offset_bottom = 48.8799
 grow_vertical = 2
+
+[node name="ItemsPanel" type="PanelContainer" parent="BattleUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.523
+anchor_top = 0.902
+anchor_right = 0.523
+anchor_bottom = 0.902
+offset_left = -19.54
+offset_top = -203.16
+offset_right = 187.46
+offset_bottom = 1.8399
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="BattleUI/ItemsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BattleUI/ItemsPanel/MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="BattleUI/ItemsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Select Item:"
+
+[node name="ItemsList" type="ItemList" parent="BattleUI/ItemsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+auto_width = true
+auto_height = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="BattleUI/ItemsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="UseButton" type="Button" parent="BattleUI/ItemsPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "use"
+
+[node name="BackButton" type="Button" parent="BattleUI/ItemsPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "X"
